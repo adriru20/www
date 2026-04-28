@@ -1,0 +1,53 @@
+## Reunión
+### PERSONAS
+- Raúl Gálvez - [raul@libeen.com](mailto:raul@libeen.com) - [695 37 38 13](tlf:695373813)
+### A TENER EN CUENTA
+Zonas:
+- Lo más cerca de Madrid
+- Se va a intentar en Alcorcón
+	- Se mirarán 
+- Aluche (180.000 - 220.000)
+- 3 últimas nominas
+- Cumplimos
+- Presupuesto máximo 240.000€
+- Entrada máxima 20.600€
+
+Se firma el primer y único contrato con alquiler con opción a compra:
+- Clausulas de alquiler
+- Opción a compra
+- Entradas / contrato de arrasç
+Como pronto al año 3 y como tarde año 7
+
+Se puede pagar: 13,5% y 20%
+
+2008
+- Se construía un montón
+- Hay poca demanda
+
+2026
+- Se construye menos
+- Pero hay mucha demanda
+---
+## IA Gemini
+Analizando el documento de presentación de Libeen, se pueden identificar varias condiciones, sobrecostes y omisiones (la famosa "letra pequeña") que debes tener muy en cuenta antes de firmar, ya que encarecen la operación y trasladan ciertos riesgos hacia ti.
+Aquí tienes un desglose de las principales "trampas" o puntos críticos basados en la información del PDF:
+### 1. El "Precio Protegido" esconde un sobreprecio del ~23%
+El folleto promete fijar el precio de compra desde hoy, pero lo hace aplicando una revalorización de mercado estimada a 7 años (entre un 2,5% y un 3,5% anual acumulado).
+- La realidad: Estás comprando la casa mucho más cara de lo que vale hoy. En su propio ejemplo, una vivienda que hoy cuesta 200.000€ pasa a tener un "Precio Protegido" de 245.980€. Esto significa que asumes toda la supuesta revalorización de la vivienda por adelantado.
+### 2. Gastos dobles y diferidos
+Aunque al principio parece que te salvas de los gastos iniciales, en realidad los pagarás más adelante, sumados a las tarifas propias de Libeen:
+- Comisiones inmobiliarias: Si la casa la vende una agencia, tú tendrás que pagar su comisión (entre un 2% y un 4% más IVA) el día que ejecutes la compra.
+- Impuestos y Notaría: Libeen cubre los gastos hoy (ITP, notaría, registro), pero cuando tú les compres la vivienda en el futuro, tendrás que asumir esos gastos.
+- Tarifas de Libeen: Te cobran 2.500€ solo por entrar al programa (Cuota de Acceso) y otros 3.500€ (Cuota de Paso a Propiedad) cuando finalmente compres la vivienda. Son 6.000€ a fondo perdido que no van al pago de la casa.  
+### 3. Asumes obligaciones de propietario siendo inquilino
+Mientras estás en la fase de alquiler (años 1 al 7), legalmente eres un inquilino de Libeen. Sin embargo, el contrato te obliga a pagar los Gastos de Comunidad desde el inicio, un gasto que en un alquiler tradicional suele asumir el propietario.
+### 4. La presión del tiempo
+Una vez que pagas los primeros 500€ para el estudio financiero y la reserva de fondos , tienes un plazo máximo de 6 meses para encontrar y reservar tu vivienda.
+### 5. ¿Qué pasa si las cosas salen mal? (Omisiones clave)
+El PDF es un folleto comercial y omite información vital sobre los riesgos en caso de que no puedas culminar la compra:
+- Pérdida de ahorros: El documento detalla que acumulas el 30% del alquiler para la compra. Sin embargo, no explica qué ocurre con ese dinero, ni con los 2.500€ de entrada, si decides no comprar, si pierdes tu trabajo, o si en el año 7 el banco no te concede la hipoteca. (En la mayoría de contratos de alquiler con opción a compra convencionales, si no compras, pierdes todo lo aportado).
+- Reformas limitadas: Puedes personalizar la vivienda, pero no puedes hacer reformas integrales , lo cual limita qué tipo de casas "para entrar a vivir"  puedes elegir si no te gusta su distribución actual.
+
+En resumen, Libeen actúa como un intermediario financiero que te presta el dinero para la entrada inicial, pero a cambio te cobra cuantiosas comisiones directas (6.000€) , te traslada gastos de propietario y se asegura una plusvalía enorme al venderte la casa a precio de futuro (245.980€ por algo que vale 200.000€).
+
+¿Te gustaría que hagamos un cálculo estimado de cuánto dinero real habrías desembolsado en total al llegar al año 7 utilizando su propio ejemplo?
