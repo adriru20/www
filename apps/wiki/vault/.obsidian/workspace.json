@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "78b89d10ed02382f",
+        "id": "64e9e9f6093137ba",
         "type": "tabs",
         "children": [
           {
-            "id": "6d67cad44fc39017",
+            "id": "49284c6fbf5a031b",
             "type": "leaf",
             "state": {
               "type": "empty",
@@ -36,13 +36,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "1. SYS/Ansible/Tema 2/12. Esenciales.md",
                 "followCursor": false,
                 "showSearch": true,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Esquema de 12. Esenciales"
+              "title": "Esquema"
             }
           }
         ]
@@ -118,37 +117,42 @@
       "command-palette:Abrir paleta de comandos": false
     }
   },
-  "active": "6d67cad44fc39017",
+  "active": "826b3751c362dc15",
   "lastOpenFiles": [
+    "9. Documentos/pdf/Sesion Informativa Libeen 2026.pdf",
+    "5. Casa/Reuniones/2026-04-28 Libeen.md",
+    "9. Documentos/pdf/Sesion Informativa Libeen 2026 con apuntes.pdf",
+    "5. Casa/Reuniones/2026-05-06 Libeen.md",
+    "0. Rápidas/Lista.md",
+    "0. Rápidas/Personal/Administrativos/Declaracion de la renta.md",
+    "0. Rápidas/Personal/Administrativos",
+    "0. Rápidas/Personal/Proyectos personales/Radio del Seat Córdoba 2008.md",
+    "0. Rápidas/Personal/Proyectos personales/Pala de paddel.md",
+    "Pasted image 20260507112525.png",
+    "Pasted image 20260507112520.png",
+    "8. Plantillas/Reunión.md",
+    "5. Casa/Bancos/2026-05-05 BBAV.md",
+    "0. Rápidas/Personal/Viajes/Cáceres.md",
+    "0. Rápidas/Personal/Viajes/Agosto 2026.md",
+    "0. Rápidas/Personal/Proyectos personales/Kitchen Draw.md",
+    "0. Rápidas/Personal/Proyectos personales",
+    "0. Rápidas/Personal/Informativas/Coche.md",
+    "0. Rápidas/Personal/Regalos/Ro.md",
+    "0. Rápidas/Personal/Regalos/Yo.md",
+    "1. SYS/Ansible/Configuraciones/$ Desinstalar.md",
+    "5. Casa/$ Lo básico/Alquiler.md",
+    "0. Rápidas/0. Notas.md",
     "1. SYS/Linux/Bypass login.md",
     "0. Rápidas/Listas.md",
-    "0. Rápidas/Lista.md",
     "1. SYS/Linux/CentOS.md",
     "5. Casa/$ Lo básico",
     "5. Casa/Reuniones",
-    "5. Casa/Reuniones/2026-04-28 Reunión Libeen.md",
     "5. Casa/$ Lo básico/Compra.md",
     "0. Rápidas/Personal/Juegos/Sagas/Pokemon Pokopia.md",
     "0. Rápidas/Personal/Juegos/Sagas/Batman Arkham City.md",
     "0. Rápidas/Personal/Juegos/Sagas/Golden Sun.md",
-    "5. Casa/$ Lo básico/Alquiler.md",
     "5. Casa/Bancos/2026-03-19 CaixaBank Hipoteca.md",
-    "5. Casa/Bancos/MIRAR - IberCaja.md",
-    "0. Rápidas/Personal/Viajes/Agosto 2026.md",
     "1. SYS/Ansible/Tema 3",
-    "1. SYS/Ansible/Tema 2/24. Failed When.md",
-    "1. SYS/Ansible/Tema 2/23. Ignore Errors.md",
-    "1. SYS/Ansible/Tema 2/22. Register.md",
-    "1. SYS/Ansible/Tema 2/21. Bucles.md",
-    "1. SYS/Ansible/Tema 2 1/19. Prioridad Variables.md",
-    "1. SYS/Ansible/Tema 2 1/20. Condiciones.md",
-    "1. SYS/Ansible/Tema 2 1/16. Handlers.md",
-    "1. SYS/Ansible/Tema 2 1/17. Include y roles.md",
-    "1. SYS/Ansible/Tema 2 1/18. Templates.md",
-    "1. SYS/Ansible/Tema 2 1/15. Sintaxis.md",
-    "1. SYS/Ansible/Tema 2 1/13. Ansible playbook.md",
-    "1. SYS/Ansible/Tema 2 1/14. Variables.md",
-    "1. SYS/Ansible/Tema 2 1/11. Introducción Playbooks.md",
     "1. SYS/Ansible/Tema 2 1",
     "9. Documentos/img/ansible_prioridadVariables.png",
     "1. SYS/Ansible/Cuestionarios",
@@ -160,12 +164,6 @@
     "9. Documentos/img/devops_docker.png",
     "9. Documentos/img/Pasted image 20260323164020.png",
     "9. Documentos/img/Pasted image 20260323164001.png",
-    "9. Documentos/img/Pasted image 20260323163949.png",
-    "9. Documentos/img/Pasted image 20260323163939.png",
-    "0. Rápidas/Trabajo/Convenios",
-    "0. Rápidas/Personal/Viajes",
-    "5. Casa/Bancos",
-    "5. Casa/Casos",
     "0. Rápidas/Personal/Sin título.canvas",
     "5. Casa/Sin título.canvas",
     "Sin título.canvas",

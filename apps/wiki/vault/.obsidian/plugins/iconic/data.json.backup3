@@ -20,7 +20,6 @@
   "uncolorDrag": false,
   "uncolorSelect": false,
   "uncolorQuick": false,
-  "rememberDeletedItems": false,
   "maxBackups": 5,
   "dialogState": {
     "iconMode": true,
@@ -494,5 +493,6 @@
       "icon": "lucide-folder",
       "color": "purple"
     }
-  ]
+  ],
+  "rememberDeletedItems": false
 }

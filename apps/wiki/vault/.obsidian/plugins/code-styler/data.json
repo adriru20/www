@@ -312,7 +312,7 @@
         "title": {
           "textFont": "",
           "textBold": false,
-          "textItalic": true
+          "textItalic": false
         },
         "languageTag": {
           "display": "none",

@@ -4,24 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "959573c7e352e0cd",
+        "id": "2471140144898673",
         "type": "tabs",
         "children": [
           {
-            "id": "2044d1c4bc31f965",
+            "id": "5b7b2195a06375cf",
             "type": "leaf",
-            "pinned": true,
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "0. Rápidas/0. Notas.md",
-                "mode": "source",
-                "source": false,
-                "backlinks": false
-              },
-              "pinned": true,
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "0. Notas"
+              "title": "Nueva pestaña"
             }
           }
         ]
@@ -86,7 +79,7 @@
         "state": {
           "type": "outline",
           "state": {
-            "file": "0. Rápidas/Trabajo/Sitios viernes 27.md",
+            "file": "Declaracion de la renta.md",
             "followCursor": false,
             "showSearch": true,
             "searchQuery": ""
@@ -110,11 +103,12 @@
       "obsidian-importer:Open Importer": false
     }
   },
-  "active": "2044d1c4bc31f965",
+  "active": "5b7b2195a06375cf",
   "lastOpenFiles": [
+    "0. Rápidas/0. Notas.md",
+    "Declaracion de la renta.md",
     "0. Rápidas/Listas.md",
     "0. Rápidas/Personal/$ Lista de morosos.md",
-    "0. Rápidas/0. Notas.md",
     "0. Rápidas/Personal/Escritos/Diccionarios/Ro.md",
     "0. Rápidas/Personal/Diccionarios/Ro.md",
     "0. Rápidas/Personal/Viajes pendientes.md",
@@ -139,7 +133,6 @@
     "Medicamentos.md",
     "0. Rápidas/Personal/Regalos/Ro.md",
     "0. Rápidas/Medicamentos",
-    "0. Rápidas/Personal/Informativas/Coche.md",
-    "0. Rápidas/Compra casa rural.md"
+    "0. Rápidas/Personal/Informativas/Coche.md"
   ]
 }

@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: /src/login/login.php");
+    exit();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
 <?php include "{$src}backend/config/ini.php"; save_ip(); ?>
