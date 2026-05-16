@@ -1,9 +1,0 @@
-## INFO
----
-
-## PROCE
----
-
-## BIBLIOGRAFÍA
----
-- 

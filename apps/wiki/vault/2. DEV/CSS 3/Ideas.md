@@ -1,5 +1,0 @@
-- Añadir imagen en link: [https://youtube.com/shorts/2iA1vAWlLns?si=_4pmFq4nvfEvPAZG](https://youtube.com/shorts/2iA1vAWlLns?si=_4pmFq4nvfEvPAZG)
-- Efecto Glass: [https://youtube.com/shorts/P2sKUQTWLZs?feature=share](https://youtube.com/shorts/P2sKUQTWLZs?feature=share)
-- Botón animado: [https://youtu.be/ZsGUkdFJRxA](https://youtu.be/ZsGUkdFJRxA)
-- Línea multicolor: [https://youtube.com/shorts/VXiQeZbLQiI?feature=share](https://youtube.com/shorts/VXiQeZbLQiI?feature=share)
-- Maquetado con GRID: [😈Maquetado con GRID explicado como nunca antes!](https://youtu.be/xNZNHdplmxk)

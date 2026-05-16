@@ -1,2 +1,0 @@
-#### Rectal (Culo)
-- Anso
