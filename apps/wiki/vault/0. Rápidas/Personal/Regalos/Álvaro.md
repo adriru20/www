@@ -1,0 +1,2 @@
+- [ ] [Alfombrilla calefactable](https://amzn.to/3uV9V2r)
+- [ ] Barita Harry Potter (Que hace incendio)

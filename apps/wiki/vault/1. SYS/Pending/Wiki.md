@@ -1,0 +1,2 @@
+- Visualizar wiki vía web: [BookStack](https://www.bookstackapp.com/)
+- Buscar archivos (locales en la nube) vía web: [Paperless](https://docs.paperless-ngx.com/)

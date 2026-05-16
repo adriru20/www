@@ -1,0 +1,1 @@
+- Es de Windows y modifica todo, básicamente.
