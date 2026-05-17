@@ -93,7 +93,7 @@ if (isset($_POST['import_obj']) && isset($_FILES['file_obj'])) {
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
   <main class="container my-5">
-    <a href="index.php" class="btn btn-outline-info">Volver al Inventario</a>
+    <a href="./" class="btn btn-outline-info">Volver al Inventario</a>
     <br/>
     <?php if ($mensaje): ?> <div class="alert alert-<?php echo $tipo_mensaje; ?>"><?php echo $mensaje; ?></div> <?php endif; ?>
     <div class="row g-4">

@@ -402,15 +402,90 @@ h1 {
     text-transform: capitalize;
 }
 
+/*
+=========================================
+        APP INVENTARIO (Memento)
+=========================================
+*/
+/* Tarjetas de objetos y localizaciones */
+.memento-card {
+    transition: transform 0.2s;
+    height: 100%;
+    cursor: pointer;
+}
+.memento-card:hover {
+    transform: scale(1.03);
+    border-color: #0dcaf0;
+    z-index: 10;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
 
-/* -- INVENTARIO -- */
+/* Imágenes de portadas (Proporción 540x720) */
 .memento-img {
-    height: 220px;
+    width: 100%;
+    aspect-ratio: 540 / 720;
     object-fit: cover;
     background-color: #2c2c2c;
     border-bottom: 1px solid #3d3d3d;
 }
+
+/* Títulos y Etiquetas superpuestas */
 .card-title {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    line-height: 1.2;
 }
+.badge-loc {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.8);
+    font-size: 0.7rem;
+    border: 1px solid #555;
+}
+
+/* Buscador y Barra de Herramientas */
+.search-container {
+    background: #212529;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #444;
+}
+.toolbar {
+    background: #1a1d20;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #333;
+}
+
+/* Sistema de Etiquetas Múltiples (Localizaciones y Plataformas) */
+.tag-container {
+    max-height: 80px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 6px;
+    border: 1px solid #444;
+}
+.tag-btn {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    margin: 2px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.tag-btn:hover {
+    background: #0dcaf0 !important;
+    color: black !important;
+}
+
+/* Miniaturas de previsualización (Modales de añadir/editar) */
+.preview-img, .preview-loc {
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #222;
+}
+.preview-img { width: 45px; } /* Proporción para cajas de juegos */
+.preview-loc { width: 60px; } /* Proporción cuadrada para localizaciones */

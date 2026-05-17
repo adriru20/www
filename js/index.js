@@ -252,3 +252,41 @@ async function loadNote(fileName) {
         document.getElementById('viewer').innerHTML = "<p>Error: No se pudo cargar el archivo. Comprueba la consola.</p>";
     }
 }
+
+// ===== INVENTARIO =====
+function toggleTag(inputId, value) {
+    let input = document.getElementById(inputId);
+    let parts = input.value.split(',');
+    let currentTags = [];
+    for(let i = 0; i < parts.length; i++) {
+        let t = parts[i].trim();
+        if(t !== '') currentTags.push(t);
+    }
+    let index = currentTags.indexOf(value);
+    if (index > -1) currentTags.splice(index, 1);
+    else currentTags.push(value);
+    input.value = currentTags.join(', ');
+}
+
+function updatePreview(imgId, val) {
+    const img = document.getElementById(imgId);
+    if(val.trim() === '') {
+        img.src = 'https://via.placeholder.com/540x720?text=Foto';
+    } else if (val.startsWith('http') || val.startsWith('data:')) {
+        img.src = val; 
+    } else {
+        let cleanName = val.split('/').pop(); 
+        img.src = './img/' + cleanName;
+    }
+}
+
+function previewFile(input, imgId, txtId) {
+    if (input.files && input.files[0]) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById(imgId).src = e.target.result;
+        }
+        reader.readAsDataURL(input.files[0]);
+        document.getElementById(txtId).value = input.files[0].name;
+    }
+}
