@@ -17,13 +17,15 @@ global $conn;
 // --- PARCHES AUTOMÁTICOS DE BASE DE DATOS ---
 try { $conn->query("ALTER TABLE inv_objetos DROP FOREIGN KEY fk_loc_obj"); } catch(Exception $e) {}
 try { 
-    // Añadimos las nuevas columnas automáticamente si no existen
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN cantidad INT DEFAULT 1");
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN generos VARCHAR(255) DEFAULT ''");
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN formato VARCHAR(50) DEFAULT 'Físico'");
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN formato_de_archivo VARCHAR(255) DEFAULT ''");
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN en_la_caja TINYINT(1) DEFAULT 0");
     $conn->query("ALTER TABLE inv_objetos ADD COLUMN precio_de_venta DECIMAL(10,2) DEFAULT 0.00");
+    
+    // Auto-migración: Cambiamos todos los antiguos "Pelis" por "Películas" en la DB
+    $conn->query("UPDATE inv_objetos SET tipo = 'Películas' WHERE tipo = 'Pelis'");
 } catch(Exception $e) {}
 
 // --- CONFIGURACIÓN DE PARÁMETROS ---
@@ -132,7 +134,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploadedFile = handleImageUpload($_FILES['portada_file'] ?? [], $_POST['portada_custom_name'] ?? '');
         if ($uploadedFile) $portada_val = $uploadedFile; 
         
-        // Asignación de variables nuevas
         $cantidad = !empty($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
         $generos = $_POST['generos'] ?? '';
         $formato = $_POST['formato'] ?? 'Físico';
@@ -213,7 +214,6 @@ if ($tab === 'objetos') {
     }
     sort($plat_options);
 
-    // ETIQUETAS NUEVAS PARA JUEGOS
     $gen_options = [];
     $gen_db = $conn->query("SELECT DISTINCT generos FROM inv_objetos WHERE generos IS NOT NULL AND generos != ''");
     while($g = $gen_db->fetch_assoc()) {
@@ -223,12 +223,10 @@ if ($tab === 'objetos') {
     sort($gen_options);
 
     $fa_options = [];
-    $fa_db = $conn->query("SELECT DISTINCT formato_de_archivo FROM inv_objetos WHERE formato_de_archivo IS NOT NULL AND formato_de_archivo != ''");
+    $fa_db = $conn->query("SELECT DISTINCT formato_de_archivo FROM inv_objetos WHERE formato_de_archivo IS NOT NULL AND formato_de_archivo != '' ORDER BY formato_de_archivo");
     while($fa = $fa_db->fetch_assoc()) {
-        $parts = array_map('trim', explode(',', $fa['formato_de_archivo']));
-        foreach($parts as $part) { if ($part !== '' && !in_array($part, $fa_options)) $fa_options[] = $part; }
+        if ($fa['formato_de_archivo'] !== '') $fa_options[] = $fa['formato_de_archivo'];
     }
-    sort($fa_options);
 
     $loc_options = [];
     $localizaciones = $conn->query("SELECT nombre FROM inv_localizaciones ORDER BY nombre ASC");
@@ -404,7 +402,7 @@ elseif ($tab === 'imagenes') {
                                     <select name="tipo" id="tipo_edit_<?php echo $obj['id']; ?>" class="form-select form-select-sm" onchange="toggleConditionals('edit_<?php echo $obj['id']; ?>')">
                                         <option value="Objetos" <?php echo ($obj['tipo'] == 'Objetos') ? 'selected' : ''; ?>>Objetos</option>
                                         <option value="Juegos" <?php echo ($obj['tipo'] == 'Juegos') ? 'selected' : ''; ?>>Juegos</option>
-                                        <option value="Pelis" <?php echo ($obj['tipo'] == 'Pelis') ? 'selected' : ''; ?>>Pelis</option>
+                                        <option value="Películas" <?php echo ($obj['tipo'] == 'Películas') ? 'selected' : ''; ?>>Películas</option>
                                     </select>
                                 </div>
                                 <div class="col-6 mb-2">
@@ -425,7 +423,7 @@ elseif ($tab === 'imagenes') {
                                 </div>
 
                                 <div class="mb-2">
-                                    <label class="small fw-bold">Formato del Juego</label>
+                                    <label class="small fw-bold">Formato (Físico/Digital)</label>
                                     <select name="formato" id="formato_edit_<?php echo $obj['id']; ?>" class="form-select form-select-sm" onchange="toggleConditionals('edit_<?php echo $obj['id']; ?>')">
                                         <option value="Físico" <?php echo (($obj['formato'] ?? '') == 'Físico') ? 'selected' : ''; ?>>💿 Físico</option>
                                         <option value="Digital" <?php echo (($obj['formato'] ?? '') == 'Digital') ? 'selected' : ''; ?>>☁️ Digital</option>
@@ -435,12 +433,7 @@ elseif ($tab === 'imagenes') {
                                 <div id="phys_fields_edit_<?php echo $obj['id']; ?>" class="d-none mt-2 border-top border-secondary pt-2">
                                     <div class="mb-2">
                                         <label class="small fw-bold">Formato de Archivo</label>
-                                        <input type="text" name="formato_de_archivo" id="fa_edit_<?php echo $obj['id']; ?>" class="form-control form-control-sm" value="<?php echo htmlspecialchars($obj['formato_de_archivo'] ?? ''); ?>">
-                                        <div class="tag-container mt-1">
-                                            <?php foreach($fa_options as $fo): ?>
-                                                <span class="badge bg-secondary tag-btn" onclick="toggleTag('fa_edit_<?php echo $obj['id']; ?>', '<?php echo addslashes($fo); ?>')">+ <?php echo htmlspecialchars($fo); ?></span>
-                                            <?php endforeach; ?>
-                                        </div>
+                                        <input type="text" name="formato_de_archivo" class="form-control form-control-sm" value="<?php echo htmlspecialchars($obj['formato_de_archivo'] ?? ''); ?>" list="listaFormatosArchivo" autocomplete="off">
                                     </div>
 
                                     <div class="form-check form-switch mb-2">
@@ -528,7 +521,7 @@ elseif ($tab === 'imagenes') {
                         <select name="tipo" id="tipo_new" class="form-select" onchange="toggleConditionals('new')">
                             <option value="Objetos">Objetos</option>
                             <option value="Juegos">Juegos</option>
-                            <option value="Pelis">Pelis</option>
+                            <option value="Películas">Películas</option>
                         </select>
                     </div>
                     <div class="col-6 mb-2">
@@ -549,7 +542,7 @@ elseif ($tab === 'imagenes') {
                     </div>
 
                     <div class="mb-2">
-                        <label class="small fw-bold">Formato del Juego</label>
+                        <label class="small fw-bold">Formato (Físico/Digital)</label>
                         <select name="formato" id="formato_new" class="form-select form-select-sm" onchange="toggleConditionals('new')">
                             <option value="Físico">💿 Físico</option>
                             <option value="Digital">☁️ Digital</option>
@@ -559,12 +552,7 @@ elseif ($tab === 'imagenes') {
                     <div id="phys_fields_new" class="mt-2 border-top border-secondary pt-2">
                         <div class="mb-2">
                             <label class="small fw-bold">Formato de Archivo</label>
-                            <input type="text" name="formato_de_archivo" id="fa_new" class="form-control form-control-sm">
-                            <div class="tag-container mt-1">
-                                <?php foreach($fa_options as $fo): ?>
-                                    <span class="badge bg-secondary tag-btn" onclick="toggleTag('fa_new', '<?php echo addslashes($fo); ?>')">+ <?php echo htmlspecialchars($fo); ?></span>
-                                <?php endforeach; ?>
-                            </div>
+                            <input type="text" name="formato_de_archivo" class="form-control form-control-sm" list="listaFormatosArchivo" autocomplete="off">
                         </div>
 
                         <div class="form-check form-switch mb-2">
@@ -605,6 +593,7 @@ elseif ($tab === 'imagenes') {
     
     <datalist id="listaCategorias"><?php foreach($cat_options as $cat): ?><option value="<?php echo htmlspecialchars($cat); ?>"></option><?php endforeach; ?></datalist>
     <datalist id="listaPlataformas"><?php foreach($plat_options as $plat): ?><option value="<?php echo htmlspecialchars($plat); ?>"></option><?php endforeach; ?></datalist>
+    <datalist id="listaFormatosArchivo"><?php foreach($fa_options as $fo): ?><option value="<?php echo htmlspecialchars($fo); ?>"></option><?php endforeach; ?></datalist>
     <datalist id="listaImagenesInventario"><?php foreach($local_images as $img): ?><option value="<?php echo htmlspecialchars($img); ?>"></option><?php endforeach; ?></datalist>
     <?php endif; ?>
 
@@ -799,7 +788,6 @@ elseif ($tab === 'imagenes') {
     <?php endif; ?>
 
   </main>
-
   <?php include "{$src}frontend/footer.php"; ?>
 </body>
 </html>

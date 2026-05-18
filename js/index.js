@@ -264,7 +264,7 @@ function toggleConditionals(prefix) {
     const physFields = document.getElementById('phys_fields_' + prefix);
     const priceFields = document.getElementById('price_fields_' + prefix);
 
-    if (tipo === 'Juegos') {
+    if (tipo === 'Juegos' || tipo === 'Películas') {
         if (gameFields) gameFields.classList.remove('d-none');
         const formatoSel = document.getElementById('formato_' + prefix);
         const formato = formatoSel ? formatoSel.value : 'Físico';
@@ -322,5 +322,4 @@ function previewFile(input, imgId, txtId) {
     }
 }
 
-// Asegurar que al cargar la página en Añadir Objeto esté correcta la visibilidad inicial
 document.addEventListener("DOMContentLoaded", function() { toggleConditionals("new"); });
