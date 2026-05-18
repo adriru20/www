@@ -2,10 +2,10 @@
 session_start();
 $src = '../../';
 
-// Silenciamos los warnings menores en producción para que no rompan el HTML
-ini_set('display_errors', 0);
-ini_set('display_startup_errors', 0);
-error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+// Volvemos a activar los errores. Así, si algo falla, nos dirá la línea exacta en lugar de dar un Error 500 en blanco.
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: {$src}src/login/index.php");
@@ -15,20 +15,25 @@ if (!isset($_SESSION['user_id'])) {
 require $src . 'backend/config/db.php';
 global $conn;
 
-// --- PARCHES AUTOMÁTICOS DE BASE DE DATOS (SILENCIADOS CON @ PARA NO BLOQUEAR) ---
-@$conn->query("ALTER TABLE inv_objetos DROP FOREIGN KEY fk_loc_obj");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN cantidad INT DEFAULT 1");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN generos VARCHAR(255) DEFAULT ''");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN formato VARCHAR(50) DEFAULT 'Físico'");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN formato_de_archivo VARCHAR(255) DEFAULT ''");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN en_la_caja TINYINT(1) DEFAULT 0");
-@$conn->query("ALTER TABLE inv_objetos ADD COLUMN precio_de_venta DECIMAL(10,2) DEFAULT 0.00");
-@$conn->query("ALTER TABLE inv_localizaciones ADD COLUMN descripcion_del_contenido TEXT");
+// --- PARCHES AUTOMÁTICOS DE BASE DE DATOS SEGUROS ---
+// Función para evitar el Error 500 si la columna ya existe
+function patchDB($sql) {
+    global $conn;
+    try { $conn->query($sql); } catch(Exception $e) {}
+}
 
-// Migraciones automáticas de datos antiguos
-@$conn->query("UPDATE inv_objetos SET tipo = 'Películas' WHERE tipo = 'Pelis'");
-@$conn->query("UPDATE inv_objetos SET portada_http = SUBSTRING_INDEX(portada_http, '/', -1) WHERE portada_http LIKE '%/%' AND portada_http NOT LIKE 'http%'");
-@$conn->query("UPDATE inv_localizaciones SET foto_http = SUBSTRING_INDEX(foto_http, '/', -1) WHERE foto_http LIKE '%/%' AND foto_http NOT LIKE 'http%'");
+patchDB("ALTER TABLE inv_objetos DROP FOREIGN KEY fk_loc_obj");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN cantidad INT DEFAULT 1");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN generos VARCHAR(255) DEFAULT ''");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN formato VARCHAR(50) DEFAULT 'Físico'");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN formato_de_archivo VARCHAR(255) DEFAULT ''");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN en_la_caja TINYINT(1) DEFAULT 0");
+patchDB("ALTER TABLE inv_objetos ADD COLUMN precio_de_venta DECIMAL(10,2) DEFAULT 0.00");
+patchDB("ALTER TABLE inv_localizaciones ADD COLUMN descripcion_del_contenido TEXT");
+
+patchDB("UPDATE inv_objetos SET tipo = 'Películas' WHERE tipo = 'Pelis'");
+patchDB("UPDATE inv_objetos SET portada_http = SUBSTRING_INDEX(portada_http, '/', -1) WHERE portada_http LIKE '%/%' AND portada_http NOT LIKE 'http%'");
+patchDB("UPDATE inv_localizaciones SET foto_http = SUBSTRING_INDEX(foto_http, '/', -1) WHERE foto_http LIKE '%/%' AND foto_http NOT LIKE 'http%'");
 
 // --- CONFIGURACIÓN DE PARÁMETROS ---
 $tab = $_GET['tab'] ?? 'objetos';
@@ -36,7 +41,6 @@ $page = max(1, isset($_GET['p']) ? (int)$_GET['p'] : 1);
 $limit = 24; 
 $offset = ($page - 1) * $limit;
 
-// Parámetros de Filtros
 $search = $_GET['q'] ?? '';
 $f_loc = isset($_GET['f_loc']) ? (is_array($_GET['f_loc']) ? $_GET['f_loc'] : [$_GET['f_loc']]) : [];
 $f_tipo = $_GET['f_tipo'] ?? '';
@@ -47,7 +51,6 @@ $q_loc = $_GET['q_loc'] ?? '';
 $f_cat_loc = $_GET['f_cat_loc'] ?? '';
 $sort_loc = $_GET['sort_loc'] ?? 'cat_nombre'; 
 
-// LIMPIEZA DE URL
 function urlParam($updates) {
     $params = $_GET;
     foreach($updates as $k => $v) {
@@ -58,9 +61,8 @@ function urlParam($updates) {
     return $query ? '?' . $query : '';
 }
 
-// RENDERIZADO VISUAL
 function renderImg($val) {
-    if (empty($val)) return ''; // Devolvemos vacío para que JS/HTML aplique el SVG por defecto
+    if (empty($val)) return ''; 
     if (strpos($val, 'http') === 0) return $val;
     return './img/' . basename($val);
 }
@@ -81,10 +83,10 @@ if (is_dir($img_dir)) {
     }
 }
 
-// SUBIDA DE ARCHIVOS
+// SUBIDA DE ARCHIVOS CORREGIDA (Evita avisos si no hay archivo)
 function handleImageUpload($fileArray, $customName = '') {
     global $img_dir;
-    if (!empty($fileArray['name']) && $fileArray['error'] === UPLOAD_ERR_OK) {
+    if (isset($fileArray['name'], $fileArray['error']) && !empty($fileArray['name']) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($fileArray['name'], PATHINFO_EXTENSION));
         if (!empty($customName)) {
             $cleanName = preg_replace("/[^a-zA-Z0-9\-_]/", "", $customName);
@@ -99,7 +101,6 @@ function handleImageUpload($fileArray, $customName = '') {
     return null;
 }
 
-// NUEVA FUNCIÓN: Procesa ambos inputs (Cámara o Galería)
 function handleDualUpload($fileCam, $fileFolder, $customName) {
     $uploaded = handleImageUpload($fileCam, $customName);
     if (!$uploaded) {
@@ -289,6 +290,10 @@ elseif ($tab === 'imagenes') {
 <html lang="es" data-bs-theme="dark">
 <?php include "{$src}backend/config/ini.php"; ?>
 <body>
+  <script>
+      const fallbackSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='540' height='720' viewBox='0 0 540 720'%3E%3Crect width='540' height='720' fill='%232c3e50'/%3E%3Ctext x='50%25' y='50%25' fill='%23ecf0f1' font-size='40' text-anchor='middle' alignment-baseline='middle'%3ESin Foto%3C/text%3E%3C/svg%3E";
+  </script>
+
   <?php include "{$src}frontend/menu.php"; ?>
   
   <main class="container-fluid px-4 my-4">
@@ -415,7 +420,7 @@ elseif ($tab === 'imagenes') {
                                         
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_obj_<?php echo $obj['id']; ?>').click()" title="Hacer foto">📷</button>
-                                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_obj_<?php echo $obj['id']; ?>').click()" title="Adjuntar archivo de galería">📁</button>
+                                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_obj_<?php echo $obj['id']; ?>').click()" title="Adjuntar archivo">📁</button>
                                         </div>
                                         <img id="preview_edit_obj_<?php echo $obj['id']; ?>" src="<?php echo htmlspecialchars($img); ?>" class="preview-img shadow-sm" onerror="this.src=fallbackSvg">
                                     </div>
@@ -540,7 +545,7 @@ elseif ($tab === 'imagenes') {
                             
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_obj').click()" title="Hacer foto">📷</button>
-                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_obj').click()" title="Adjuntar archivo de galería">📁</button>
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_obj').click()" title="Adjuntar archivo">📁</button>
                             </div>
                             <img id="preview_new_obj" src="" class="preview-img shadow-sm" onerror="this.src=fallbackSvg">
                         </div>
@@ -701,7 +706,7 @@ elseif ($tab === 'imagenes') {
                                         
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_loc_<?php echo $loc['id']; ?>').click()" title="Hacer foto">📷</button>
-                                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_loc_<?php echo $loc['id']; ?>').click()" title="Adjuntar archivo de galería">📁</button>
+                                            <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_loc_<?php echo $loc['id']; ?>').click()" title="Adjuntar archivo">📁</button>
                                         </div>
                                         <img id="preview_edit_loc_<?php echo $loc['id']; ?>" src="<?php echo htmlspecialchars($img); ?>" class="preview-loc shadow-sm" onerror="this.src=fallbackSvg">
                                     </div>
@@ -750,7 +755,7 @@ elseif ($tab === 'imagenes') {
                             
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_loc').click()" title="Hacer foto">📷</button>
-                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_loc').click()" title="Adjuntar archivo de galería">📁</button>
+                                <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_loc').click()" title="Adjuntar archivo">📁</button>
                             </div>
                             <img id="preview_new_loc" src="" class="preview-loc shadow-sm" onerror="this.src=fallbackSvg">
                         </div>
@@ -834,11 +839,6 @@ elseif ($tab === 'imagenes') {
 
   </main>
 
-  <script>
-      // Variable Global con imagen de reemplazo por si falla algo
-      const fallbackSvg = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='540' height='720' viewBox='0 0 540 720'%3E%3Crect width='540' height='720' fill='%232c3e50'/%3E%3Ctext x='50%25' y='50%25' fill='%23ecf0f1' font-size='40' text-anchor='middle' alignment-baseline='middle'%3ESin Foto%3C/text%3E%3C/svg%3E";
-  </script>
-  
   <?php include "{$src}frontend/footer.php"; ?>
 </body>
 </html>
