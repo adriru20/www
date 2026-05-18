@@ -12,7 +12,6 @@ if (!isset($_SESSION['user_id'])) {
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
   <nav class="container homepage">
-    <li><a href="https://<?=$url?>/" class="btn btn-primary"><b>INICIO</b></a></li>
     <li><a href="https://<?=$url?>/apps/wiki/" class="btn btn-primary"><b>WIKI</b></a></li>
     <li><a href="https://<?=$url?>/apps/parking/" class="btn btn-primary"><b>PARKING</b></a></li>
     <li><a href="https://<?=$url?>/apps/giftlist/" class="btn btn-primary"><b>GIFT LIST</b></a></li>
