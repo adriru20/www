@@ -49,7 +49,7 @@ $q_loc = $_GET['q_loc'] ?? '';
 $f_cat_loc = $_GET['f_cat_loc'] ?? '';
 $sort_loc = $_GET['sort_loc'] ?? 'cat_nombre'; 
 
-$q_img = $_GET['q_img'] ?? ''; // Nuevo filtro de búsqueda para imágenes
+$q_img = $_GET['q_img'] ?? ''; 
 
 function urlParam($updates) {
     $params = $_GET;
@@ -301,7 +301,6 @@ elseif ($tab === 'localizaciones') {
     $show_filters_loc = ($f_cat_loc !== '' || $sort_loc !== 'cat_nombre') ? 'show' : ''; 
 } 
 elseif ($tab === 'imagenes') {
-    // Aplicamos filtro de búsqueda si se ha escrito algo en la barra
     if ($q_img !== '') {
         $filtered = [];
         foreach ($local_images as $img) {
@@ -356,7 +355,7 @@ elseif ($tab === 'imagenes') {
         <div class="search-container shadow-sm d-flex gap-2">
             <input type="text" name="q" class="form-control" placeholder="🔍 Buscar por título, localización..." value="<?php echo htmlspecialchars($search); ?>">
             <button type="submit" class="btn btn-info text-white fw-bold px-3" title="Buscar">🔍</button>
-            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosAvanzados">⚙️ Filtros</button>
+            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosAvanzados" title="Filtros">⚙️</button>
         </div>
         <div class="collapse <?php echo $show_filters; ?> mt-2" id="filtrosAvanzados">
             <div class="toolbar shadow-sm">
@@ -678,7 +677,7 @@ elseif ($tab === 'imagenes') {
         <div class="search-container shadow-sm d-flex gap-2">
             <input type="text" name="q_loc" class="form-control" placeholder="🔍 Buscar nombre..." value="<?php echo htmlspecialchars($q_loc); ?>">
             <button type="submit" class="btn btn-info text-white fw-bold px-3" title="Buscar">🔍</button>
-            <button class="btn btn-outline-secondary d-flex align-items-center gap-2" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosLoc">⚙️ Filtros</button>
+            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosLoc" title="Filtros">⚙️</button>
         </div>
         <div class="collapse <?php echo $show_filters_loc; ?> mt-2" id="filtrosLoc">
             <div class="toolbar shadow-sm">
@@ -870,7 +869,7 @@ elseif ($tab === 'imagenes') {
             </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="col-12 text-center py-5 text-muted">No se han encontrado resultados.</div>
+            <div class="col-12 text-center py-5 text-muted">La carpeta img/ no tiene imágenes compatibles o está vacía.</div>
         <?php endif; ?>
     </div>
 
