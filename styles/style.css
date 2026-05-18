@@ -167,6 +167,10 @@ h1 {
   }
 }
 
+.homepage > li {
+  margin-bottom: 16px;
+}
+
 /* APP src/aparcamiento */
 .container > .card {
   border-radius: 1rem;

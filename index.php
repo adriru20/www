@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 <?php include "{$src}backend/config/ini.php"; save_ip(); ?>
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
-  <nav class="container">
+  <nav class="container homepage">
     <li><a href="https://<?=$url?>/" class="btn btn-primary"><b>INICIO</b></a></li>
     <li><a href="https://<?=$url?>/apps/wiki/" class="btn btn-primary"><b>WIKI</b></a></li>
     <li><a href="https://<?=$url?>/apps/parking/" class="btn btn-primary"><b>PARKING</b></a></li>
