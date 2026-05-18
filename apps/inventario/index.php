@@ -312,7 +312,7 @@ elseif ($tab === 'imagenes') {
                         <select name="sort" class="form-select form-select-sm">
                             <option value="newest" <?php echo $sort == 'newest' ? 'selected' : ''; ?>>🕒 Recientes</option>
                             <option value="nombre_asc" <?php echo $sort == 'nombre_asc' ? 'selected' : ''; ?>>🔤 Nombre (A-Z)</option>
-                            <option value="tipo_nombre" <?php echo $sort == 'tipo_nombre' ? 'selected' : ''; ?>>📁 Tipo > Nom</option>
+                            <option value="tipo_nombre" <?php echo $sort == 'tipo_nombre' ? 'selected' : ''; ?>>📁 Tipo > Nombre</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-grid mt-4 pt-1"><a href="index.php?tab=objetos" class="btn btn-outline-danger btn-sm">Limpiar</a></div>
