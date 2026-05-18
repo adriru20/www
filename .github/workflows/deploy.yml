@@ -18,4 +18,4 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /kunden/homepages/28/d1007113302/htdocs/www/
+          server-dir: /www/
