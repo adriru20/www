@@ -313,6 +313,17 @@ function updatePreview(imgId, val) {
     }
 }
 
+// Función modificada para diferenciar abrir cámara directa o explorador normal
+function openPicker(inputId, useCamera) {
+    let input = document.getElementById(inputId);
+    if (useCamera) {
+        input.setAttribute("capture", "environment");
+    } else {
+        input.removeAttribute("capture");
+    }
+    input.click();
+}
+
 function previewFile(input, imgId, txtId) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
@@ -322,4 +333,7 @@ function previewFile(input, imgId, txtId) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", function() { toggleConditionals("new"); });
+// Se ejecuta nada más cargar la página web
+document.addEventListener("DOMContentLoaded", function() {
+    toggleConditionals("new");
+});
