@@ -249,7 +249,7 @@ elseif ($tab === 'imagenes') {
 
   <main class="container-fluid px-4 my-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
-        <h2 class="mb-0">📦 Memento <span class="text-info fs-5">(<?php
+        <h2 class="mb-0">📦Inventario <span class="text-info fs-5">(<?php
             if($tab == 'objetos') echo $count_obj;
             elseif($tab == 'localizaciones') echo $count_loc;
             else echo $total_images;
