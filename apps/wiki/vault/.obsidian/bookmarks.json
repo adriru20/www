@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "type": "file",
+      "ctime": 1761482490501,
+      "path": "Yavor/kubernetes - awx.md",
+      "subpath": "#Running the kubernetes pod",
+      "title": "Voy por aquí"
+    },
+    {
+      "type": "file",
+      "ctime": 1762490626610,
+      "path": "1. SYS/Linux/LVM.md",
+      "subpath": "#RELLENAR",
+      "title": "Continuar migrando apuntes desde aquí"
+    },
+    {
+      "type": "file",
+      "ctime": 1763209993980,
+      "path": "1. SYS/Ansible/Configuraciones/$ Instalar.md",
+      "subpath": "#3) Arrancar Minikube (driver docker) con recursos adecuados",
+      "title": "Reinstalando, voy por aquí"
+    }
+  ]
+}

@@ -1,0 +1,498 @@
+{
+  "biggerIcons": "mobile",
+  "clickableIcons": "desktop",
+  "showAllFileIcons": false,
+  "showAllFolderIcons": false,
+  "minimalFolderIcons": false,
+  "showMarkdownTabIcons": true,
+  "showTitleIcons": true,
+  "showTagPillIcons": true,
+  "showMenuActions": true,
+  "showSuggestionIcons": true,
+  "showQuickSwitcherIcons": true,
+  "showMoveFileIcons": true,
+  "showItemName": "desktop",
+  "biggerSearchResults": "mobile",
+  "maxSearchResults": 50,
+  "colorPicker1": "list",
+  "colorPicker2": "rgb",
+  "uncolorHover": false,
+  "uncolorDrag": false,
+  "uncolorSelect": false,
+  "uncolorQuick": false,
+  "maxBackups": 5,
+  "dialogState": {
+    "iconMode": true,
+    "emojiMode": false,
+    "rulePage": "folder"
+  },
+  "appIcons": {},
+  "tabIcons": {},
+  "fileIcons": {
+    "1. SYS/Linux": {
+      "icon": "lucide-folder",
+      "unsynced": [
+        "17ef8b16698df384",
+        "/storage/emulated/0/Documents/Obsidian/ApuntesAdriru"
+      ]
+    },
+    "1. SYS/Linux/LVM.md#RELLENAR": {
+      "icon": "lucide-pencil-line"
+    }
+  },
+  "bookmarkIcons": {},
+  "tagIcons": {},
+  "propertyIcons": {},
+  "ribbonIcons": {
+    "audio-recorder:Iniciar/Detener la grabación": {
+      "color": "red"
+    },
+    "canvas:Crear nuevo lienzo": {
+      "color": "green"
+    },
+    "command-palette:Abrir paleta de comandos": {
+      "color": "gray"
+    },
+    "iconic:Abrir libro de reglas": {
+      "icon": "lucide-pencil-ruler",
+      "color": "purple"
+    },
+    "obsidian-importer:Open Importer": {
+      "color": "red"
+    },
+    "obsidian-kanban:Create new board": {
+      "color": "green"
+    },
+    "switcher:Abrir selector rápido": {
+      "color": "blue"
+    },
+    "templates:Insertar plantilla": {
+      "icon": "lucide-book-template",
+      "color": "green"
+    }
+  },
+  "fileRules": [
+    {
+      "id": "jCCGc",
+      "name": "Ficheros de DEV",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "contains",
+          "value": "2. DEV"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-file-code",
+      "color": "blue"
+    },
+    {
+      "id": "vxvhE",
+      "name": "Imágen",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "9. Documentos/img/"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-image",
+      "color": "gray"
+    },
+    {
+      "id": "Q0Kiq",
+      "name": "PDF",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "9. Documentos/pdf/"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-file",
+      "color": "gray"
+    },
+    {
+      "id": "YwpHS",
+      "name": "Plantilla",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "8. Plantillas/"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-book-template",
+      "color": "green"
+    },
+    {
+      "id": "1he36",
+      "name": "Genérico",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "!startsWith",
+          "value": "."
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-notepad-text",
+      "color": "blue"
+    }
+  ],
+  "folderRules": [
+    {
+      "id": "hIlVw",
+      "name": "Rápidas",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "0"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-notebook-pen",
+      "color": "purple"
+    },
+    {
+      "id": "0qw47",
+      "name": "SYS",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "1"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-pc-case",
+      "color": "purple"
+    },
+    {
+      "id": "wa2xt",
+      "name": "Ansible",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "1. SYS/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "Ansible"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-stars",
+      "color": "purple"
+    },
+    {
+      "id": "2l0zy",
+      "name": "Apps ",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "1. SYS/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "Apps"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-play",
+      "color": "purple"
+    },
+    {
+      "id": "scOd3",
+      "name": "Linux",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "1. SYS/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "Linux"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-terminal-square",
+      "color": "purple"
+    },
+    {
+      "id": "jSoQT",
+      "name": "Pending ",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "1. SYS/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "Pending"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-traffic-cone",
+      "color": "purple"
+    },
+    {
+      "id": "fYjmq",
+      "name": "Windows",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "1. SYS/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "Windows"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-grid-2x-2",
+      "color": "purple"
+    },
+    {
+      "id": "hhlGQ",
+      "name": "DEV",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "2"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-code-xml",
+      "color": "purple"
+    },
+    {
+      "id": "lGwxA",
+      "name": "DevOps",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "2. DEV/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "DevOps"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-infinity",
+      "color": "purple"
+    },
+    {
+      "id": "32OxV",
+      "name": "MySQL",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "2. DEV/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "MySQL"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-database",
+      "color": "purple"
+    },
+    {
+      "id": "qnCkZ",
+      "name": "Lenguaje Codes",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "contains",
+          "value": "2. DEV/"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-folder-code",
+      "color": "purple"
+    },
+    {
+      "id": "dStWw",
+      "name": "Editores de código",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "3"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-settings-2",
+      "color": "purple"
+    },
+    {
+      "id": "sJl0Y",
+      "name": "Android",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "4"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-smartphone",
+      "color": "purple"
+    },
+    {
+      "id": "XFWeq",
+      "name": "Casa",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "5"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-house",
+      "color": "purple"
+    },
+    {
+      "id": "jwrp9",
+      "name": "Test",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "7"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-test-tube-2",
+      "color": "pink"
+    },
+    {
+      "id": "Eeg6O",
+      "name": "Plantillas",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "8"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-layout-template",
+      "color": "green"
+    },
+    {
+      "id": "nvFVS",
+      "name": "Documentos",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "startsWith",
+          "value": "9"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-files",
+      "color": "gray"
+    },
+    {
+      "id": "dq9qo",
+      "name": "Imágenes",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "9. Documentos/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "img"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-images",
+      "color": "gray"
+    },
+    {
+      "id": "GyDL3",
+      "name": "PDFs",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "tree",
+          "operator": "is",
+          "value": "9. Documentos/"
+        },
+        {
+          "source": "name",
+          "operator": "is",
+          "value": "pdf"
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-notebook"
+    },
+    {
+      "id": "KILj8",
+      "name": "Genérico",
+      "match": "all",
+      "conditions": [
+        {
+          "source": "name",
+          "operator": "!startsWith",
+          "value": "."
+        }
+      ],
+      "enabled": true,
+      "icon": "lucide-folder",
+      "color": "purple"
+    }
+  ],
+  "rememberDeletedItems": false
+}

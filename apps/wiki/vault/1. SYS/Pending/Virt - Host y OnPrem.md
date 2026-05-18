@@ -1,0 +1,2 @@
+- Configurar servidor RustDesk: [RustDesk-Docker](https://rustdesk.com/docs/en/self-host/rustdesk-server-oss/docker/)
+- Hosting Alemán barato: [Hetzner](https://www.hetzner.com/)
