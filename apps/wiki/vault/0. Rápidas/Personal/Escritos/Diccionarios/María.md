@@ -1,2 +1,0 @@
-- Palera (Papelera)
-- Crocreta (Croqueta)

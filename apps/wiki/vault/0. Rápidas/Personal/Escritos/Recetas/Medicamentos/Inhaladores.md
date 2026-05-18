@@ -1,2 +1,0 @@
-#### Bronquitis
-- DuoResp Spiromax
