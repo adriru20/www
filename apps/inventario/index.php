@@ -2,7 +2,6 @@
 session_start();
 $src = '../../';
 
-// Volvemos a activar los errores. Así, si algo falla, nos dirá la línea exacta en lugar de dar un Error 500 en blanco.
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -16,7 +15,6 @@ require $src . 'backend/config/db.php';
 global $conn;
 
 // --- PARCHES AUTOMÁTICOS DE BASE DE DATOS SEGUROS ---
-// Función para evitar el Error 500 si la columna ya existe
 function patchDB($sql) {
     global $conn;
     try { $conn->query($sql); } catch(Exception $e) {}
@@ -51,6 +49,8 @@ $q_loc = $_GET['q_loc'] ?? '';
 $f_cat_loc = $_GET['f_cat_loc'] ?? '';
 $sort_loc = $_GET['sort_loc'] ?? 'cat_nombre'; 
 
+$q_img = $_GET['q_img'] ?? ''; // Nuevo filtro de búsqueda para imágenes
+
 function urlParam($updates) {
     $params = $_GET;
     foreach($updates as $k => $v) {
@@ -65,6 +65,27 @@ function renderImg($val) {
     if (empty($val)) return ''; 
     if (strpos($val, 'http') === 0) return $val;
     return './img/' . basename($val);
+}
+
+// --- DICCIONARIO DE EMOJIS PARA LOCALIZACIONES ---
+$loc_map = [];
+$res_locs = $conn->query("SELECT nombre, categoria FROM inv_localizaciones");
+if ($res_locs) {
+    while($r = $res_locs->fetch_assoc()) {
+        $loc_map[$r['nombre']] = mb_strtolower(trim($r['categoria']));
+    }
+}
+function getEmojiForCategory($cat) {
+    if (!$cat) return '📍';
+    if (strpos($cat, 'caja') !== false) return '📦';
+    if (strpos($cat, 'disquetera') !== false || strpos($cat, 'cd') !== false || strpos($cat, 'dvd') !== false) return '💿';
+    if (strpos($cat, 'estanter') !== false || strpos($cat, 'balda') !== false || strpos($cat, 'librer') !== false) return '📚';
+    if (strpos($cat, 'cajón') !== false || strpos($cat, 'cajon') !== false || strpos($cat, 'gaveta') !== false) return '🗄️';
+    if (strpos($cat, 'mueble') !== false || strpos($cat, 'armario') !== false) return '🚪';
+    if (strpos($cat, 'funda') !== false || strpos($cat, 'carpeta') !== false || strpos($cat, 'archivador') !== false) return '📁';
+    if (strpos($cat, 'coche') !== false || strpos($cat, 'maletero') !== false) return '🚗';
+    if (strpos($cat, 'maleta') !== false || strpos($cat, 'mochila') !== false || strpos($cat, 'bolsa') !== false) return '🎒';
+    return '📍';
 }
 
 // --- ESCANEO DE CARPETA DE IMÁGENES ---
@@ -83,7 +104,7 @@ if (is_dir($img_dir)) {
     }
 }
 
-// SUBIDA DE ARCHIVOS CORREGIDA (Evita avisos si no hay archivo)
+// SUBIDA DE ARCHIVOS
 function handleImageUpload($fileArray, $customName = '') {
     global $img_dir;
     if (isset($fileArray['name'], $fileArray['error']) && !empty($fileArray['name']) && $fileArray['error'] === UPLOAD_ERR_OK) {
@@ -197,7 +218,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ==========================================
 $count_obj = 0; $total_pages_obj = 0;
 $count_loc = 0; $total_pages_loc = 0;
-$total_images = count($local_images);
 
 if ($tab === 'objetos') {
     $where_sql = ""; $where_parts = [];
@@ -281,6 +301,18 @@ elseif ($tab === 'localizaciones') {
     $show_filters_loc = ($f_cat_loc !== '' || $sort_loc !== 'cat_nombre') ? 'show' : ''; 
 } 
 elseif ($tab === 'imagenes') {
+    // Aplicamos filtro de búsqueda si se ha escrito algo en la barra
+    if ($q_img !== '') {
+        $filtered = [];
+        foreach ($local_images as $img) {
+            if (stripos($img, $q_img) !== false) {
+                $filtered[] = $img;
+            }
+        }
+        $local_images = $filtered;
+    }
+    
+    $total_images = count($local_images);
     $total_pages_img = ceil($total_images / $limit);
     $paginated_images = array_slice($local_images, $offset, $limit);
 }
@@ -384,8 +416,12 @@ elseif ($tab === 'imagenes') {
                         <?php endif; ?>
                     </div>
                     <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1 align-items-end" style="z-index: 10;">
-                        <?php $locs = array_map('trim', explode(',', $obj['localizacion'] ?? '')); foreach($locs as $l): if($l): ?>
-                            <span class="badge bg-dark bg-opacity-75 border border-secondary text-light shadow-sm" style="font-size: 0.7rem;"><i class="bi bi-geo-alt"></i> <?php echo htmlspecialchars($l); ?></span>
+                        <?php 
+                        $locs = array_map('trim', explode(',', $obj['localizacion'] ?? '')); 
+                        foreach($locs as $l): if($l): 
+                            $emoji = getEmojiForCategory($loc_map[$l] ?? '');
+                        ?>
+                            <span class="badge bg-dark bg-opacity-75 border border-secondary text-light shadow-sm" style="font-size: 0.7rem;"><?php echo $emoji . ' ' . htmlspecialchars($l); ?></span>
                         <?php endif; endforeach; ?>
                     </div>
 
@@ -415,8 +451,8 @@ elseif ($tab === 'imagenes') {
                                     <div class="d-flex gap-2 align-items-center">
                                         <input type="text" name="portada_http" id="txt_edit_obj_<?php echo $obj['id']; ?>" class="form-control form-control-sm" list="listaImagenesInventario" value="<?php echo htmlspecialchars(basename($obj['portada_http'] ?? '')); ?>" oninput="updatePreview('preview_edit_obj_<?php echo $obj['id']; ?>', this.value)">
                                         
-                                        <input type="file" name="portada_file_cam" id="file_cam_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>')">
-                                        <input type="file" name="portada_file_folder" id="file_folder_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>')">
+                                        <input type="file" name="portada_file_cam" id="file_cam_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>', 'custom_name_edit_obj_<?php echo $obj['id']; ?>', 'objeto')">
+                                        <input type="file" name="portada_file_folder" id="file_folder_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>', 'custom_name_edit_obj_<?php echo $obj['id']; ?>', 'objeto')">
                                         
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_obj_<?php echo $obj['id']; ?>').click()" title="Hacer foto">📷</button>
@@ -424,7 +460,7 @@ elseif ($tab === 'imagenes') {
                                         </div>
                                         <img id="preview_edit_obj_<?php echo $obj['id']; ?>" src="<?php echo htmlspecialchars($img); ?>" class="preview-img shadow-sm" onerror="this.src=fallbackSvg">
                                     </div>
-                                    <input type="text" name="portada_custom_name" class="form-control form-control-sm" placeholder="Nombre personalizado de archivo (Opcional)">
+                                    <input type="text" name="portada_custom_name" id="custom_name_edit_obj_<?php echo $obj['id']; ?>" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
                                 </div>
                             </div>
                             
@@ -540,8 +576,8 @@ elseif ($tab === 'imagenes') {
                         <div class="d-flex gap-2 align-items-center">
                             <input type="text" name="portada_http" id="txt_new_obj" class="form-control" list="listaImagenesInventario" oninput="updatePreview('preview_new_obj', this.value)">
                             
-                            <input type="file" name="portada_file_cam" id="file_cam_new_obj" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj')">
-                            <input type="file" name="portada_file_folder" id="file_folder_new_obj" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj')">
+                            <input type="file" name="portada_file_cam" id="file_cam_new_obj" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj', 'custom_name_new_obj', 'objeto')">
+                            <input type="file" name="portada_file_folder" id="file_folder_new_obj" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj', 'custom_name_new_obj', 'objeto')">
                             
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_obj').click()" title="Hacer foto">📷</button>
@@ -549,7 +585,7 @@ elseif ($tab === 'imagenes') {
                             </div>
                             <img id="preview_new_obj" src="" class="preview-img shadow-sm" onerror="this.src=fallbackSvg">
                         </div>
-                        <input type="text" name="portada_custom_name" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
+                        <input type="text" name="portada_custom_name" id="custom_name_new_obj" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
                     </div>
                 </div>
 
@@ -680,7 +716,9 @@ elseif ($tab === 'imagenes') {
                 <div class="card memento-card shadow-sm bg-dark" data-bs-toggle="modal" data-bs-target="#editLoc<?php echo $loc['id']; ?>">
                     <img src="<?php echo htmlspecialchars($img); ?>" class="card-img-top memento-img placeholder-fallback" alt="Foto" loading="lazy" onerror="this.src=fallbackSvg">
                     <div class="card-body p-2 text-center d-flex flex-column justify-content-center">
-                        <div class="card-title text-info text-truncate mb-1"><?php echo htmlspecialchars($loc['nombre'] ?? ''); ?></div>
+                        <div class="card-title text-info text-truncate mb-1">
+                            <?php echo getEmojiForCategory($loc['categoria']); ?> <?php echo htmlspecialchars($loc['nombre'] ?? ''); ?>
+                        </div>
                         <small class="text-secondary" style="font-size:0.7rem;"><?php echo htmlspecialchars($loc['categoria'] ?? ''); ?></small>
                     </div>
                 </div>
@@ -701,8 +739,8 @@ elseif ($tab === 'imagenes') {
                                     <div class="d-flex gap-2 align-items-center">
                                         <input type="text" name="foto_http" id="txt_edit_loc_<?php echo $loc['id']; ?>" class="form-control form-control-sm" list="listaImagenesInventario" value="<?php echo htmlspecialchars(basename($loc['foto_http'] ?? '')); ?>" oninput="updatePreview('preview_edit_loc_<?php echo $loc['id']; ?>', this.value)">
                                         
-                                        <input type="file" name="foto_file_cam" id="file_cam_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>')">
-                                        <input type="file" name="foto_file_folder" id="file_folder_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>')">
+                                        <input type="file" name="foto_file_cam" id="file_cam_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>', 'custom_name_edit_loc_<?php echo $loc['id']; ?>', 'localizacion')">
+                                        <input type="file" name="foto_file_folder" id="file_folder_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>', 'custom_name_edit_loc_<?php echo $loc['id']; ?>', 'localizacion')">
                                         
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_loc_<?php echo $loc['id']; ?>').click()" title="Hacer foto">📷</button>
@@ -710,7 +748,7 @@ elseif ($tab === 'imagenes') {
                                         </div>
                                         <img id="preview_edit_loc_<?php echo $loc['id']; ?>" src="<?php echo htmlspecialchars($img); ?>" class="preview-loc shadow-sm" onerror="this.src=fallbackSvg">
                                     </div>
-                                    <input type="text" name="foto_custom_name" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
+                                    <input type="text" name="foto_custom_name" id="custom_name_edit_loc_<?php echo $loc['id']; ?>" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
                                 </div>
                             </div>
                             <div class="mb-2"><label class="small text-muted">Descripción</label><textarea name="descripcion_del_contenido" class="form-control form-control-sm" rows="3"><?php echo htmlspecialchars($loc['descripcion_del_contenido'] ?? ''); ?></textarea></div>
@@ -750,8 +788,8 @@ elseif ($tab === 'imagenes') {
                         <div class="d-flex gap-2 align-items-center">
                             <input type="text" name="foto_http" id="txt_new_loc" class="form-control" list="listaImagenesInventario" oninput="updatePreview('preview_new_loc', this.value)">
                             
-                            <input type="file" name="foto_file_cam" id="file_cam_new_loc" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc')">
-                            <input type="file" name="foto_file_folder" id="file_folder_new_loc" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc')">
+                            <input type="file" name="foto_file_cam" id="file_cam_new_loc" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc', 'custom_name_new_loc', 'localizacion')">
+                            <input type="file" name="foto_file_folder" id="file_folder_new_loc" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc', 'custom_name_new_loc', 'localizacion')">
                             
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_loc').click()" title="Hacer foto">📷</button>
@@ -759,7 +797,7 @@ elseif ($tab === 'imagenes') {
                             </div>
                             <img id="preview_new_loc" src="" class="preview-loc shadow-sm" onerror="this.src=fallbackSvg">
                         </div>
-                        <input type="text" name="foto_custom_name" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
+                        <input type="text" name="foto_custom_name" id="custom_name_new_loc" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
                     </div>
                 </div>
                 <div class="mb-2"><label>Descripción</label><textarea name="descripcion_del_contenido" class="form-control"></textarea></div>
@@ -773,6 +811,16 @@ elseif ($tab === 'imagenes') {
     <?php endif; ?>
 
     <?php if ($tab == 'imagenes'): ?>
+    
+    <form method="GET" action="index.php" class="mb-4">
+        <input type="hidden" name="tab" value="imagenes">
+        <div class="search-container shadow-sm d-flex gap-2">
+            <input type="text" name="q_img" class="form-control" placeholder="🔍 Buscar nombre de imagen..." value="<?php echo htmlspecialchars($q_img); ?>">
+            <button type="submit" class="btn btn-info text-white fw-bold px-3" title="Buscar">🔍</button>
+            <a href="index.php?tab=imagenes" class="btn btn-outline-danger">Limpiar</a>
+        </div>
+    </form>
+
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if (!empty($paginated_images)): ?>
             <?php foreach($paginated_images as $index => $img_name): 
@@ -822,7 +870,7 @@ elseif ($tab === 'imagenes') {
             </div>
             <?php endforeach; ?>
         <?php else: ?>
-            <div class="col-12 text-center py-5 text-muted">La carpeta img/ no tiene imágenes compatibles o está vacía.</div>
+            <div class="col-12 text-center py-5 text-muted">No se han encontrado resultados.</div>
         <?php endif; ?>
     </div>
 

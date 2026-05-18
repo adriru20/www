@@ -258,7 +258,7 @@ async function loadNote(fileName) {
 // FUNCIÓN PARA GESTIONAR LOS CAMPOS CONDICIONALES DE JUEGOS
 function toggleConditionals(prefix) {
     const tipoSel = document.getElementById('tipo_' + prefix);
-    if (!tipoSel) return; 
+    if (!tipoSel) return;
 
     const tipo = tipoSel.value;
     const gameFields = document.getElementById('game_fields_' + prefix);
@@ -308,35 +308,60 @@ function updatePreview(imgId, val) {
     if(!img) return;
 
     if(val.trim() === '') {
-        // Usa la variable fallback global definida en el PHP
         if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
     } else if (val.startsWith('http') || val.startsWith('data:')) {
-        img.src = val;
+        img.src = val; 
     } else {
-        // En caso de que venga con barra, la quitamos
-        let cleanName = val.split('/').pop();
+        let cleanName = val.split('/').pop(); 
         img.src = './img/' + cleanName;
     }
 }
 
-function previewFile(input, imgId, txtId) {
+// Actualizada para recibir customNameId y entityType (objeto/localizacion) y autogenerar
+function previewFile(input, imgId, txtId, customNameId, entityType) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function(e) { 
             let img = document.getElementById(imgId);
-            if(img) img.src = e.target.result;
+            if(img) img.src = e.target.result; 
         }
         reader.readAsDataURL(input.files[0]);
+
         let txt = document.getElementById(txtId);
         if(txt) txt.value = input.files[0].name;
+
+        // --- LÓGICA DE AUTO-NOMBRAMIENTO INTELIGENTE ---
+        let form = input.closest('form');
+        if (form && customNameId && entityType) {
+            let customNameInput = document.getElementById(customNameId);
+            // Solo lo pisamos si el usuario lo había dejado vacío
+            if (customNameInput && customNameInput.value.trim() === '') {
+                let part1 = '';
+                let part2 = '';
+
+                if (entityType === 'objeto') {
+                    part1 = form.querySelector('select[name="tipo"]')?.value || 'Objeto';
+                    part2 = form.querySelector('input[name="titulo"]')?.value || 'SinTitulo';
+                } else if (entityType === 'localizacion') {
+                    part1 = form.querySelector('input[name="categoria"]')?.value || 'Cat';
+                    part2 = form.querySelector('input[name="nombre"]')?.value || 'Loc';
+                }
+
+                // Función para limpiar acentos y caracteres raros
+                let cleanName = `${part1}_${part2}`
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
+                    .replace(/\s+/g, '_') // Cambiar espacios por guión bajo
+                    .replace(/[^a-zA-Z0-9_]/g, ''); // Quitar cosas raras (paréntesis, comillas, etc)
+
+                customNameInput.value = cleanName;
+            }
+        }
     }
 }
 
-// Inicializar la interfaz vacía cuando carga la página
 document.addEventListener("DOMContentLoaded", function() {
     toggleConditionals("new");
 
-    // Forzamos a que las imágenes rotas cojan la imagen SVG por defecto
     const images = document.querySelectorAll('.placeholder-fallback');
     images.forEach(img => {
         if(!img.getAttribute('src') || img.getAttribute('src').trim() === '') {
@@ -344,5 +369,3 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
-
-console.log("Llega hasta aquí");
