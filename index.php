@@ -13,7 +13,8 @@ if (!isset($_SESSION['user_id'])) {
   <?php include "{$src}frontend/menu.php"; ?>
   <nav class="container">
 
-    <h1><?php include "{$src}frontend/menu.php"; ?></h1>
+    <h1>Hola1</h1>
+    <h1>Hola2</h1>
 
   </nav>
   <?php include "{$src}frontend/footer.php"; ?>
