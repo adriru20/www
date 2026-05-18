@@ -1,3 +1,5 @@
+console.log("JS funciona");
+
 /* -- HEADER -- */
 const toggleBtn = document.querySelector('.toggle_btn')
 const toggleBtnIcon = document.querySelector('.toggle_btn i')
@@ -11,7 +13,6 @@ toggleBtn.onclick = function () {
     : 'fa-solid fa-bars'
 }
 
-console.log("JavaScript funciona");
 
 /* -- FUNCIONES PRINCIPALES DE APARCAMIENTO -- */
 function guardar() {
@@ -257,7 +258,7 @@ async function loadNote(fileName) {
 // FUNCIÓN PARA GESTIONAR LOS CAMPOS CONDICIONALES DE JUEGOS
 function toggleConditionals(prefix) {
     const tipoSel = document.getElementById('tipo_' + prefix);
-    if (!tipoSel) return;
+    if (!tipoSel) return; 
 
     const tipo = tipoSel.value;
     const gameFields = document.getElementById('game_fields_' + prefix);
@@ -289,6 +290,7 @@ function toggleConditionals(prefix) {
 
 function toggleTag(inputId, value) {
     let input = document.getElementById(inputId);
+    if(!input) return;
     let parts = input.value.split(',');
     let currentTags = [];
     for(let i = 0; i < parts.length; i++) {
@@ -303,37 +305,44 @@ function toggleTag(inputId, value) {
 
 function updatePreview(imgId, val) {
     const img = document.getElementById(imgId);
+    if(!img) return;
+
     if(val.trim() === '') {
-        img.src = 'https://via.placeholder.com/540x720?text=Foto';
+        // Usa la variable fallback global definida en el PHP
+        if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
     } else if (val.startsWith('http') || val.startsWith('data:')) {
         img.src = val;
     } else {
+        // En caso de que venga con barra, la quitamos
         let cleanName = val.split('/').pop();
         img.src = './img/' + cleanName;
     }
 }
 
-// Función modificada para diferenciar abrir cámara directa o explorador normal
-function openPicker(inputId, useCamera) {
-    let input = document.getElementById(inputId);
-    if (useCamera) {
-        input.setAttribute("capture", "environment");
-    } else {
-        input.removeAttribute("capture");
-    }
-    input.click();
-}
-
 function previewFile(input, imgId, txtId) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) { document.getElementById(imgId).src = e.target.result; }
+        reader.onload = function(e) {
+            let img = document.getElementById(imgId);
+            if(img) img.src = e.target.result;
+        }
         reader.readAsDataURL(input.files[0]);
-        document.getElementById(txtId).value = input.files[0].name;
+        let txt = document.getElementById(txtId);
+        if(txt) txt.value = input.files[0].name;
     }
 }
 
-// Se ejecuta nada más cargar la página web
+// Inicializar la interfaz vacía cuando carga la página
 document.addEventListener("DOMContentLoaded", function() {
     toggleConditionals("new");
+
+    // Forzamos a que las imágenes rotas cojan la imagen SVG por defecto
+    const images = document.querySelectorAll('.placeholder-fallback');
+    images.forEach(img => {
+        if(!img.getAttribute('src') || img.getAttribute('src').trim() === '') {
+            if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
+        }
+    });
 });
+
+console.log("Llega hasta aquí");
