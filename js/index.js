@@ -254,6 +254,39 @@ async function loadNote(fileName) {
 }
 
 // ===== INVENTARIO =====
+// FUNCIÓN PARA GESTIONAR LOS CAMPOS CONDICIONALES DE JUEGOS
+function toggleConditionals(prefix) {
+    const tipoSel = document.getElementById('tipo_' + prefix);
+    if (!tipoSel) return;
+
+    const tipo = tipoSel.value;
+    const gameFields = document.getElementById('game_fields_' + prefix);
+    const physFields = document.getElementById('phys_fields_' + prefix);
+    const priceFields = document.getElementById('price_fields_' + prefix);
+
+    if (tipo === 'Juegos') {
+        if (gameFields) gameFields.classList.remove('d-none');
+        const formatoSel = document.getElementById('formato_' + prefix);
+        const formato = formatoSel ? formatoSel.value : 'Físico';
+
+        if (formato === 'Físico') {
+            if (physFields) physFields.classList.remove('d-none');
+            const enLaCaja = document.getElementById('en_la_caja_' + prefix);
+
+            if (enLaCaja && enLaCaja.checked) {
+                if (priceFields) priceFields.classList.remove('d-none');
+            } else {
+                if (priceFields) priceFields.classList.add('d-none');
+            }
+        } else {
+            if (physFields) physFields.classList.add('d-none');
+            if (priceFields) priceFields.classList.add('d-none');
+        }
+    } else {
+        if (gameFields) gameFields.classList.add('d-none');
+    }
+}
+
 function toggleTag(inputId, value) {
     let input = document.getElementById(inputId);
     let parts = input.value.split(',');
@@ -273,9 +306,9 @@ function updatePreview(imgId, val) {
     if(val.trim() === '') {
         img.src = 'https://via.placeholder.com/540x720?text=Foto';
     } else if (val.startsWith('http') || val.startsWith('data:')) {
-        img.src = val; 
+        img.src = val;
     } else {
-        let cleanName = val.split('/').pop(); 
+        let cleanName = val.split('/').pop();
         img.src = './img/' + cleanName;
     }
 }
@@ -283,10 +316,11 @@ function updatePreview(imgId, val) {
 function previewFile(input, imgId, txtId) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById(imgId).src = e.target.result;
-        }
+        reader.onload = function(e) { document.getElementById(imgId).src = e.target.result; }
         reader.readAsDataURL(input.files[0]);
         document.getElementById(txtId).value = input.files[0].name;
     }
 }
+
+// Asegurar que al cargar la página en Añadir Objeto esté correcta la visibilidad inicial
+document.addEventListener("DOMContentLoaded", function() { toggleConditionals("new"); });
