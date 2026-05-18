@@ -19,5 +19,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: 22
-          source: "."
-          target: "/kunden/homepages/28/d1007113302/htdocs/www/"
+          source: "*"
+          target: "www/"
