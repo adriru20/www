@@ -1,8 +1,8 @@
 <head>
   <meta charset="UTF-8"/>
-  <link rel="manifest" href="<?=$src?>backend/PWA/manifest.json">
-  <meta name="theme-color" content="#212529">
-  <link rel="apple-touch-icon" href="<?=$src?>img/Astronauta-Icono.jpg">
+  <link rel="manifest" href="<?=$src?>backend/PWA/manifest.json"/>
+  <meta name="theme-color" content="#212529"/>
+  <link rel="apple-touch-icon" href="<?=$src?>img/Astronauta-Icono.jpg"/>
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="shortcut icon" href="<?=$src?>img/favicon.ico" type="image/x-icon"/>
