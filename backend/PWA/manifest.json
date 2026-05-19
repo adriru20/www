@@ -2,7 +2,7 @@
   "name": "Inventario",
   "short_name": "Inventario",
   "description": "Gestión de colección de objetos y localizaciones",
-  "start_url": "../../apps/inventario/",
+  "start_url": "../../apps/inventario/index.php",
   "display": "standalone",
   "background_color": "#212529",
   "theme_color": "#FF69B4",

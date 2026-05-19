@@ -1,6 +1,6 @@
 const CACHE_NAME = 'inventario-cache-v1';
 const urlsToCache = [
-  '../../apps/inventario/',
+  '../../apps/inventario/index.php',
   '../../js/index.js'
   // Aquí podrías añadir tu CSS, Bootstrap o logos estáticos si los tienes
 ];
