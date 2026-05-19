@@ -310,9 +310,9 @@ function updatePreview(imgId, val) {
     if(val.trim() === '') {
         if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
     } else if (val.startsWith('http') || val.startsWith('data:')) {
-        img.src = val; 
+        img.src = val;
     } else {
-        let cleanName = val.split('/').pop(); 
+        let cleanName = val.split('/').pop();
         img.src = './img/' + cleanName;
     }
 }
@@ -321,9 +321,9 @@ function updatePreview(imgId, val) {
 function previewFile(input, imgId, txtId, customNameId, entityType) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) { 
+        reader.onload = function(e) {
             let img = document.getElementById(imgId);
-            if(img) img.src = e.target.result; 
+            if(img) img.src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
 
@@ -369,3 +369,19 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+
+// ===== PWA =====
+// REGISTRO DEL SERVICE WORKER PARA LA PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
+      })
+      .catch(err => {
+        console.log('Fallo al registrar el ServiceWorker: ', err);
+      });
+  });
+}
