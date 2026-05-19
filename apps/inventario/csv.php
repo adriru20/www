@@ -89,7 +89,7 @@ function crearBackupZip($conn, $rutaDestino) {
 }
 
 // =========================================================================
-// ACCIONES DIRECTAS (DESCARGAS Y GUARDADO)
+// ACCIONES DIRECTAS (DESCARGAS INDIVIDUALES)
 // =========================================================================
 
 // 1. Exportar solo Localizaciones
@@ -110,21 +110,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'obj') {
     generarCsvObjetos($conn, $output);
     fclose($output);
     exit();
-}
-
-// 3. Exportar TODO (Descarga directa)
-if (isset($_GET['export']) && $_GET['export'] === 'zip') {
-    $zipName = date('Y-m-d') . '_inventario-adriru.es.zip';
-    $zipFile = tempnam(sys_get_temp_dir(), 'zip');
-    
-    if (crearBackupZip($conn, $zipFile)) {
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename="' . $zipName . '"');
-        header('Content-Length: ' . filesize($zipFile));
-        readfile($zipFile);
-        unlink($zipFile);
-        exit();
-    }
 }
 
 // =========================================================================
@@ -268,9 +253,8 @@ if (is_dir($backup_dir)) {
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
         
         <div class="d-flex gap-2 flex-wrap">
-            <a href="?export=zip" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Descargar Backup</a>
             <form method="POST" class="m-0">
-                <button type="submit" name="save_backup_server" class="btn btn-info text-white fw-bold shadow-sm">💾 Guardar en Servidor</button>
+                <button type="submit" name="save_backup_server" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Hacer Backup</button>
             </form>
         </div>
     </div>
