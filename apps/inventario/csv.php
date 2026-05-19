@@ -205,7 +205,7 @@ if (isset($_POST['import_obj']) && isset($_FILES['file_obj'])) {
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
-        <a href="?export=zip" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Exportar Todo de una vez (.ZIP)</a>
+        <a href="?export=zip" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Backup</a>
     </div>
     
     <?php if ($mensaje): ?> 
