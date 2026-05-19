@@ -2,7 +2,7 @@
   "name": "Inventario",
   "short_name": "Inventario",
   "description": "Gestión de colección de objetos y localizaciones",
-  "start_url": "apps/inventario/",
+  "start_url": "../../apps/inventario/",
   "display": "standalone",
   "background_color": "#212529",
   "theme_color": "#0dcaf0",
@@ -15,7 +15,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "img/Astronauta-flotador.png",
+      "src": "../../img/Astronauta-flotador.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
