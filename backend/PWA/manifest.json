@@ -1,5 +1,5 @@
 {
-  "name": "Inventario Memento",
+  "name": "Inventario",
   "short_name": "Inventario",
   "description": "Gestión de colección de objetos y localizaciones",
   "start_url": "../../apps/inventario/index.php",
@@ -9,12 +9,12 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "../../img/Astronauta-Icono.jpg",
+      "src": "../../img/Astronauta-flotador.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "../../img/Astronauta-Icono.jpg",
+      "src": "../../img/Astronauta-flotador.png",
       "sizes": "512x512",
       "type": "image/png"
     }
