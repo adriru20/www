@@ -247,7 +247,7 @@ if (is_dir($backup_dir)) {
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
 
-  <main class="containerB my-5" style="max-width: 900px;">
+  <main class="containerB my-5">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
