@@ -154,7 +154,7 @@ if (isset($_POST['delete_backups'])) {
 if (isset($_POST['import_loc']) && isset($_FILES['file_loc'])) {
     $file_tmp = $_FILES['file_loc']['tmp_name'];
     if (($handle = fopen($file_tmp, "r")) !== FALSE) {
-        fgetcsv($handle); 
+        fgetcsv($handle);
         $contador = 0;
         while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
             if (empty(trim($data[1] ?? ''))) continue;
@@ -247,7 +247,7 @@ if (is_dir($backup_dir)) {
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
 
-  <main class="container my-5" style="max-width: 900px;">
+  <main class="containerB my-5" style="max-width: 900px;">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
