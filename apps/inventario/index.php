@@ -47,9 +47,9 @@ $sort = $_GET['sort'] ?? 'newest';
 
 $q_loc = $_GET['q_loc'] ?? '';
 $f_cat_loc = $_GET['f_cat_loc'] ?? '';
-$sort_loc = $_GET['sort_loc'] ?? 'cat_nombre'; 
+$sort_loc = $_GET['sort_loc'] ?? 'cat_nombre';
 
-$q_img = $_GET['q_img'] ?? ''; 
+$q_img = $_GET['q_img'] ?? '';
 
 function urlParam($updates) {
     $params = $_GET;
@@ -62,7 +62,7 @@ function urlParam($updates) {
 }
 
 function renderImg($val) {
-    if (empty($val)) return ''; 
+    if (empty($val)) return '';
     if (strpos($val, 'http') === 0) return $val;
     return './img/' . basename($val);
 }
@@ -99,7 +99,7 @@ if (is_dir($img_dir)) {
     foreach ($files as $file) {
         $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'])) {
-            $local_images[] = $file; 
+            $local_images[] = $file;
         }
     }
 }
@@ -114,10 +114,10 @@ function handleImageUpload($fileArray, $customName = '') {
             $fileName = $cleanName . '.' . $ext;
         } else {
             $fileName = basename($fileArray['name']);
-            $fileName = preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName); 
+            $fileName = preg_replace("/[^a-zA-Z0-9.\-_]/", "", $fileName);
         }
         $targetFilePath = $img_dir . $fileName;
-        if (move_uploaded_file($fileArray['tmp_name'], $targetFilePath)) return $fileName; 
+        if (move_uploaded_file($fileArray['tmp_name'], $targetFilePath)) return $fileName;
     }
     return null;
 }
@@ -165,8 +165,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = $_POST['id'] ?? null;
         $portada_val = $_POST['portada_http'] ?? '';
         $uploadedFile = handleDualUpload($_FILES['portada_file_cam'] ?? [], $_FILES['portada_file_folder'] ?? [], $_POST['portada_custom_name'] ?? '');
-        if ($uploadedFile) $portada_val = $uploadedFile; 
-        
+        if ($uploadedFile) $portada_val = $uploadedFile;
+
         $cantidad = !empty($_POST['cantidad']) ? (int)$_POST['cantidad'] : 1;
         $generos = $_POST['generos'] ?? '';
         $formato = $_POST['formato'] ?? 'Físico';
@@ -180,34 +180,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipo_de_objeto = $_POST['tipo_de_objeto'] ?? '';
         $plataformas = $_POST['plataformas'] ?? '';
 
-        $stmt = $id 
+        $stmt = $id
             ? $conn->prepare("UPDATE inv_objetos SET objeto=?, localizacion=?, descripcion=?, tipo=?, tipo_de_objeto=?, plataformas=?, portada_http=?, cantidad=?, generos=?, formato=?, formato_de_archivo=?, en_la_caja=?, precio_de_venta=? WHERE id=?")
             : $conn->prepare("INSERT INTO inv_objetos (objeto, localizacion, descripcion, tipo, tipo_de_objeto, plataformas, portada_http, cantidad, generos, formato, formato_de_archivo, en_la_caja, precio_de_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        
+
         if ($id) $stmt->bind_param("sssssssisssidi", $titulo, $localizacion, $descripcion, $tipo, $tipo_de_objeto, $plataformas, $portada_val, $cantidad, $generos, $formato, $formato_archivo, $en_la_caja, $precio, $id);
         else $stmt->bind_param("sssssssisssid", $titulo, $localizacion, $descripcion, $tipo, $tipo_de_objeto, $plataformas, $portada_val, $cantidad, $generos, $formato, $formato_archivo, $en_la_caja, $precio);
-        
+
         $stmt->execute();
         header("Location: index.php" . urlParam([])); exit();
     }
-    
+
     if (isset($_POST['save_loc'])) {
         $id = $_POST['id'] ?? null;
         $foto_val = $_POST['foto_http'] ?? '';
         $uploadedFile = handleDualUpload($_FILES['foto_file_cam'] ?? [], $_FILES['foto_file_folder'] ?? [], $_POST['foto_custom_name'] ?? '');
         if ($uploadedFile) $foto_val = $uploadedFile;
-        
+
         $nombre = $_POST['nombre'] ?? 'Sin Nombre';
         $descripcion_del_contenido = $_POST['descripcion_del_contenido'] ?? '';
         $categoria = $_POST['categoria'] ?? '';
 
-        $stmt = $id 
+        $stmt = $id
             ? $conn->prepare("UPDATE inv_localizaciones SET nombre=?, descripcion_del_contenido=?, categoria=?, foto_http=? WHERE id=?")
             : $conn->prepare("INSERT INTO inv_localizaciones (nombre, descripcion_del_contenido, categoria, foto_http) VALUES (?, ?, ?, ?)");
-        
+
         if ($id) $stmt->bind_param("ssssi", $nombre, $descripcion_del_contenido, $categoria, $foto_val, $id);
         else $stmt->bind_param("ssss", $nombre, $descripcion_del_contenido, $categoria, $foto_val);
-        
+
         $stmt->execute();
         header("Location: index.php?tab=localizaciones"); exit();
     }
@@ -243,11 +243,11 @@ if ($tab === 'objetos') {
     $objetos = $conn->query("SELECT * FROM inv_objetos $where_sql $order_sql LIMIT $offset, $limit");
 
     $tipos_db = $conn->query("SELECT DISTINCT tipo FROM inv_objetos WHERE tipo IS NOT NULL AND tipo != '' ORDER BY tipo");
-    
+
     $cat_options = [];
     $tipos_obj_db = $conn->query("SELECT DISTINCT tipo_de_objeto FROM inv_objetos WHERE tipo_de_objeto IS NOT NULL AND tipo_de_objeto != '' ORDER BY tipo_de_objeto");
     while($to = $tipos_obj_db->fetch_assoc()) $cat_options[] = $to['tipo_de_objeto'];
-    
+
     $plat_options = [];
     $plataformas_db = $conn->query("SELECT DISTINCT plataformas FROM inv_objetos WHERE plataformas IS NOT NULL AND plataformas != ''");
     while($p = $plataformas_db->fetch_assoc()) {
@@ -273,9 +273,9 @@ if ($tab === 'objetos') {
     $loc_options = [];
     $localizaciones = $conn->query("SELECT nombre FROM inv_localizaciones ORDER BY nombre ASC");
     while($row = $localizaciones->fetch_assoc()) $loc_options[] = $row['nombre'];
-    
+
     $show_filters = (!empty($f_loc) || $f_tipo !== '' || $f_t_obj !== '' || $sort !== 'newest') ? 'show' : '';
-} 
+}
 elseif ($tab === 'localizaciones') {
     $where_loc_sql = ""; $where_loc_parts = [];
     if ($q_loc !== '') {
@@ -285,7 +285,7 @@ elseif ($tab === 'localizaciones') {
     if ($f_cat_loc !== '') $where_loc_parts[] = "categoria = '" . $conn->real_escape_string($f_cat_loc) . "'";
     if (count($where_loc_parts) > 0) $where_loc_sql = "WHERE " . implode(" AND ", $where_loc_parts);
 
-    $order_loc_sql = "ORDER BY categoria ASC, nombre ASC"; 
+    $order_loc_sql = "ORDER BY categoria ASC, nombre ASC";
     if ($sort_loc === 'nombre_asc') $order_loc_sql = "ORDER BY nombre ASC";
     if ($sort_loc === 'nombre_desc') $order_loc_sql = "ORDER BY nombre DESC";
     if ($sort_loc === 'newest') $order_loc_sql = "ORDER BY id DESC";
@@ -297,9 +297,9 @@ elseif ($tab === 'localizaciones') {
     $cat_loc_options = [];
     $cat_loc_db = $conn->query("SELECT DISTINCT categoria FROM inv_localizaciones WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria");
     while($cl = $cat_loc_db->fetch_assoc()) $cat_loc_options[] = $cl['categoria'];
-    
-    $show_filters_loc = ($f_cat_loc !== '' || $sort_loc !== 'cat_nombre') ? 'show' : ''; 
-} 
+
+    $show_filters_loc = ($f_cat_loc !== '' || $sort_loc !== 'cat_nombre') ? 'show' : '';
+}
 elseif ($tab === 'imagenes') {
     if ($q_img !== '') {
         $filtered = [];
@@ -310,7 +310,7 @@ elseif ($tab === 'imagenes') {
         }
         $local_images = $filtered;
     }
-    
+
     $total_images = count($local_images);
     $total_pages_img = ceil($total_images / $limit);
     $paginated_images = array_slice($local_images, $offset, $limit);
@@ -326,13 +326,13 @@ elseif ($tab === 'imagenes') {
   </script>
 
   <?php include "{$src}frontend/menu.php"; ?>
-  
+
   <main class="container-fluid px-4 my-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
-        <h2 class="mb-0">📦 Inventario <span class="text-info fs-5">(<?php 
-            if($tab == 'objetos') echo $count_obj; 
-            elseif($tab == 'localizaciones') echo $count_loc; 
-            else echo $total_images; 
+        <h2 class="mb-0">📦 Inventario <span class="text-info fs-5">(<?php
+            if($tab == 'objetos') echo $count_obj;
+            elseif($tab == 'localizaciones') echo $count_loc;
+            else echo $total_images;
         ?> ítems)</span></h2>
         <div class="d-flex gap-2">
             <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥 Importar CSV</a>
@@ -401,25 +401,25 @@ elseif ($tab === 'imagenes') {
             </div>
         </div>
     </form>
-    
+
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if ($objetos->num_rows > 0): ?>
-            <?php while($obj = $objetos->fetch_assoc()): 
+            <?php while($obj = $objetos->fetch_assoc()):
                 $titulo = !empty($obj['objeto']) ? $obj['objeto'] : 'Sin Título';
                 $img = renderImg($obj['portada_http']);
             ?>
             <div class="col">
                 <div class="card memento-card shadow-sm bg-dark position-relative" data-bs-toggle="modal" data-bs-target="#editObj<?php echo $obj['id']; ?>">
-                    
+
                     <div class="position-absolute top-0 start-0 p-2" style="z-index: 10;">
                         <?php if(($obj['cantidad'] ?? 1) > 1): ?>
                             <span class="badge bg-primary shadow-sm border border-secondary">x<?php echo htmlspecialchars($obj['cantidad']); ?></span>
                         <?php endif; ?>
                     </div>
                     <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1 align-items-end" style="z-index: 10;">
-                        <?php 
-                        $locs = array_map('trim', explode(',', $obj['localizacion'] ?? '')); 
-                        foreach($locs as $l): if($l): 
+                        <?php
+                        $locs = array_map('trim', explode(',', $obj['localizacion'] ?? ''));
+                        foreach($locs as $l): if($l):
                             $emoji = getEmojiForCategory($loc_map[$l] ?? '');
                         ?>
                             <span class="badge bg-dark bg-opacity-75 border border-secondary text-light shadow-sm" style="font-size: 0.7rem;"><?php echo $emoji . ' ' . htmlspecialchars($l); ?></span>
@@ -440,21 +440,21 @@ elseif ($tab === 'imagenes') {
                         <div class="modal-header"><h5 class="modal-title fs-6">Editar: <?php echo htmlspecialchars($titulo); ?></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                         <div class="modal-body">
                             <input type="hidden" name="id" value="<?php echo $obj['id']; ?>">
-                            
+
                             <div class="row">
                                 <div class="col-9 mb-2"><label class="small text-muted">Título</label><input type="text" name="titulo" class="form-control form-control-sm" value="<?php echo htmlspecialchars($titulo); ?>" required></div>
                                 <div class="col-3 mb-2"><label class="small text-muted text-info fw-bold">Cantidad</label><input type="number" name="cantidad" class="form-control form-control-sm border-info" value="<?php echo (int)($obj['cantidad'] ?? 1); ?>" min="1"></div>
                             </div>
-                            
+
                             <div class="mb-2">
                                 <label class="small text-muted">Imagen / Archivo</label>
                                 <div class="d-flex flex-column gap-2">
                                     <div class="d-flex gap-2 align-items-center">
                                         <input type="text" name="portada_http" id="txt_edit_obj_<?php echo $obj['id']; ?>" class="form-control form-control-sm" list="listaImagenesInventario" value="<?php echo htmlspecialchars(basename($obj['portada_http'] ?? '')); ?>" oninput="updatePreview('preview_edit_obj_<?php echo $obj['id']; ?>', this.value)">
-                                        
+
                                         <input type="file" name="portada_file_cam" id="file_cam_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>', 'custom_name_edit_obj_<?php echo $obj['id']; ?>', 'objeto')">
                                         <input type="file" name="portada_file_folder" id="file_folder_edit_obj_<?php echo $obj['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_obj_<?php echo $obj['id']; ?>', 'txt_edit_obj_<?php echo $obj['id']; ?>', 'custom_name_edit_obj_<?php echo $obj['id']; ?>', 'objeto')">
-                                        
+
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_obj_<?php echo $obj['id']; ?>').click()" title="Hacer foto">📷</button>
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_obj_<?php echo $obj['id']; ?>').click()" title="Adjuntar archivo">📁</button>
@@ -464,7 +464,7 @@ elseif ($tab === 'imagenes') {
                                     <input type="text" name="portada_custom_name" id="custom_name_edit_obj_<?php echo $obj['id']; ?>" class="form-control form-control-sm" placeholder="Nombre personalizado (Opcional)">
                                 </div>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-6 mb-2">
                                     <label class="small text-muted">Tipo</label>
@@ -551,7 +551,7 @@ elseif ($tab === 'imagenes') {
             <div class="col-12 text-center py-5 text-muted">No se han encontrado resultados.</div>
         <?php endif; ?>
     </div>
-    
+
     <?php if ($total_pages_obj > 1): ?>
         <nav class="mt-4"><ul class="pagination justify-content-center pagination-sm">
             <?php for($i=1; $i<=$total_pages_obj; $i++): if($i == 1 || $i == $total_pages_obj || ($i >= $page-2 && $i <= $page+2)): ?>
@@ -576,10 +576,10 @@ elseif ($tab === 'imagenes') {
                     <div class="d-flex flex-column gap-2">
                         <div class="d-flex gap-2 align-items-center">
                             <input type="text" name="portada_http" id="txt_new_obj" class="form-control" list="listaImagenesInventario" oninput="updatePreview('preview_new_obj', this.value)">
-                            
+
                             <input type="file" name="portada_file_cam" id="file_cam_new_obj" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj', 'custom_name_new_obj', 'objeto')">
                             <input type="file" name="portada_file_folder" id="file_folder_new_obj" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_obj', 'txt_new_obj', 'custom_name_new_obj', 'objeto')">
-                            
+
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_obj').click()" title="Hacer foto">📷</button>
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_obj').click()" title="Adjuntar archivo">📁</button>
@@ -665,7 +665,7 @@ elseif ($tab === 'imagenes') {
             <div class="modal-footer"><button type="submit" name="save_obj" class="btn btn-primary">Añadir</button></div>
         </form></div>
     </div>
-    
+
     <datalist id="listaCategorias"><?php foreach($cat_options as $cat): ?><option value="<?php echo htmlspecialchars($cat); ?>"></option><?php endforeach; ?></datalist>
     <datalist id="listaPlataformas"><?php foreach($plat_options as $plat): ?><option value="<?php echo htmlspecialchars($plat); ?>"></option><?php endforeach; ?></datalist>
     <datalist id="listaFormatosArchivo"><?php foreach($fa_options as $fo): ?><option value="<?php echo htmlspecialchars($fo); ?>"></option><?php endforeach; ?></datalist>
@@ -710,7 +710,7 @@ elseif ($tab === 'imagenes') {
 
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if ($loc_paginadas->num_rows > 0): ?>
-            <?php while($loc = $loc_paginadas->fetch_assoc()): 
+            <?php while($loc = $loc_paginadas->fetch_assoc()):
                 $img = renderImg($loc['foto_http'] ?? '');
             ?>
             <div class="col">
@@ -733,16 +733,16 @@ elseif ($tab === 'imagenes') {
                             <input type="hidden" name="id" value="<?php echo $loc['id']; ?>">
                             <div class="mb-2"><label class="small text-muted">Nombre</label><input type="text" name="nombre" class="form-control form-control-sm" value="<?php echo htmlspecialchars($loc['nombre'] ?? ''); ?>" required></div>
                             <div class="mb-2"><label class="small text-muted">Categoría</label><input type="text" name="categoria" class="form-control form-control-sm" value="<?php echo htmlspecialchars($loc['categoria'] ?? ''); ?>" list="listaCategoriasLoc" autocomplete="off"></div>
-                            
+
                             <div class="mb-2">
                                 <label class="small text-muted">Foto / Archivo</label>
                                 <div class="d-flex flex-column gap-2">
                                     <div class="d-flex gap-2 align-items-center">
                                         <input type="text" name="foto_http" id="txt_edit_loc_<?php echo $loc['id']; ?>" class="form-control form-control-sm" list="listaImagenesInventario" value="<?php echo htmlspecialchars(basename($loc['foto_http'] ?? '')); ?>" oninput="updatePreview('preview_edit_loc_<?php echo $loc['id']; ?>', this.value)">
-                                        
+
                                         <input type="file" name="foto_file_cam" id="file_cam_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>', 'custom_name_edit_loc_<?php echo $loc['id']; ?>', 'localizacion')">
                                         <input type="file" name="foto_file_folder" id="file_folder_edit_loc_<?php echo $loc['id']; ?>" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_edit_loc_<?php echo $loc['id']; ?>', 'txt_edit_loc_<?php echo $loc['id']; ?>', 'custom_name_edit_loc_<?php echo $loc['id']; ?>', 'localizacion')">
-                                        
+
                                         <div class="btn-group btn-group-sm">
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_edit_loc_<?php echo $loc['id']; ?>').click()" title="Hacer foto">📷</button>
                                             <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_edit_loc_<?php echo $loc['id']; ?>').click()" title="Adjuntar archivo">📁</button>
@@ -766,7 +766,7 @@ elseif ($tab === 'imagenes') {
             <div class="col-12 text-center py-5 text-muted">No se han encontrado resultados.</div>
         <?php endif; ?>
     </div>
-    
+
     <?php if ($total_pages_loc > 1): ?>
         <nav class="mt-4"><ul class="pagination justify-content-center pagination-sm">
             <?php for($i=1; $i<=$total_pages_loc; $i++): if($i == 1 || $i == $total_pages_loc || ($i >= $page-2 && $i <= $page+2)): ?>
@@ -788,10 +788,10 @@ elseif ($tab === 'imagenes') {
                     <div class="d-flex flex-column gap-2">
                         <div class="d-flex gap-2 align-items-center">
                             <input type="text" name="foto_http" id="txt_new_loc" class="form-control" list="listaImagenesInventario" oninput="updatePreview('preview_new_loc', this.value)">
-                            
+
                             <input type="file" name="foto_file_cam" id="file_cam_new_loc" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc', 'custom_name_new_loc', 'localizacion')">
                             <input type="file" name="foto_file_folder" id="file_folder_new_loc" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_loc', 'txt_new_loc', 'custom_name_new_loc', 'localizacion')">
-                            
+
                             <div class="btn-group">
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_loc').click()" title="Hacer foto">📷</button>
                                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_loc').click()" title="Adjuntar archivo">📁</button>
@@ -806,13 +806,13 @@ elseif ($tab === 'imagenes') {
             <div class="modal-footer"><button type="submit" name="save_loc" class="btn btn-primary">Añadir</button></div>
         </form></div>
     </div>
-    
+
     <datalist id="listaCategoriasLoc"><?php foreach($cat_loc_options as $cloc): ?><option value="<?php echo htmlspecialchars($cloc); ?>"></option><?php endforeach; ?></datalist>
     <datalist id="listaImagenesInventario"><?php foreach($local_images as $img): ?><option value="<?php echo htmlspecialchars($img); ?>"></option><?php endforeach; ?></datalist>
     <?php endif; ?>
 
     <?php if ($tab == 'imagenes'): ?>
-    
+
     <form method="GET" action="index.php" class="mb-4">
         <input type="hidden" name="tab" value="imagenes">
         <div class="search-container shadow-sm d-flex gap-2">
@@ -824,7 +824,7 @@ elseif ($tab === 'imagenes') {
 
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if (!empty($paginated_images)): ?>
-            <?php foreach($paginated_images as $index => $img_name): 
+            <?php foreach($paginated_images as $index => $img_name):
                 $img_url = './img/' . $img_name;
             ?>
             <div class="col">

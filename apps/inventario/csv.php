@@ -36,8 +36,8 @@ function generarCsvLocalizaciones($conn, $outputStream) {
 
 function generarCsvObjetos($conn, $outputStream) {
     fputcsv($outputStream, [
-        'portada_http', 'objeto', 'objeto_v2', 'objeto_v3', 'localizacion', 'descripcion', 
-        'tipo', 'tipo_de_objeto', 'cantidad', 'generos', 'plataformas', 'anio_de_estreno', 
+        'portada_http', 'objeto', 'objeto_v2', 'objeto_v3', 'localizacion', 'descripcion',
+        'tipo', 'tipo_de_objeto', 'cantidad', 'generos', 'plataformas', 'anio_de_estreno',
         'formato', 'precio_de_venta', 'duracion', 'formato_de_archivo', 'en_la_caja'
     ]);
     $query = $conn->query("SELECT * FROM inv_objetos ORDER BY id ASC");
@@ -45,7 +45,7 @@ function generarCsvObjetos($conn, $outputStream) {
         fputcsv($outputStream, [
             basename($row['portada_http'] ?? ''),
             $row['objeto'] ?? '',
-            '', '', 
+            '', '',
             $row['localizacion'] ?? '',
             $row['descripcion'] ?? '',
             $row['tipo'] ?? '',
@@ -67,13 +67,13 @@ function generarCsvObjetos($conn, $outputStream) {
 function crearBackupZip($conn, $rutaDestino) {
     $fileLoc = tmpfile();
     $fileObj = tmpfile();
-    
+
     generarCsvLocalizaciones($conn, $fileLoc);
     generarCsvObjetos($conn, $fileObj);
-    
+
     $metaLoc = stream_get_meta_data($fileLoc);
     $metaObj = stream_get_meta_data($fileObj);
-    
+
     $zip = new ZipArchive();
     $exito = false;
     if ($zip->open($rutaDestino, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
@@ -82,7 +82,7 @@ function crearBackupZip($conn, $rutaDestino) {
         $zip->close();
         $exito = true;
     }
-    
+
     fclose($fileLoc);
     fclose($fileObj);
     return $exito;
@@ -123,7 +123,7 @@ if (isset($_POST['save_backup_server'])) {
     // Añadimos hora, minutos y segundos para no sobreescribir si se hacen varios el mismo día
     $zipName = date('Y-m-d_H-i-s') . '_inventario-adriru.es.zip';
     $rutaFinal = $backup_dir . $zipName;
-    
+
     if (crearBackupZip($conn, $rutaFinal)) {
         $mensaje = "✅ Backup generado y guardado en el servidor correctamente: <b>$zipName</b>";
         $tipo_mensaje = "success";
@@ -177,7 +177,7 @@ if (isset($_POST['import_loc']) && isset($_FILES['file_loc'])) {
 if (isset($_POST['import_obj']) && isset($_FILES['file_obj'])) {
     $file_tmp = $_FILES['file_obj']['tmp_name'];
     if (($handle = fopen($file_tmp, "r")) !== FALSE) {
-        fgetcsv($handle); 
+        fgetcsv($handle);
         $contador = 0;
         $conn->query("SET FOREIGN_KEY_CHECKS = 0;");
 
@@ -188,7 +188,7 @@ if (isset($_POST['import_obj']) && isset($_FILES['file_obj'])) {
 
             if (empty($nombre_final)) continue;
 
-            $portada = basename(trim($data[0] ?? '')); 
+            $portada = basename(trim($data[0] ?? ''));
             $loc     = (isset($data[4]) && trim($data[4]) !== '') ? trim($data[4]) : null;
             $desc    = trim($data[5] ?? '');
             $tipo    = trim($data[6] ?? '');
@@ -246,26 +246,26 @@ if (is_dir($backup_dir)) {
 <?php include "{$src}backend/config/ini.php"; ?>
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
-  
+
   <main class="container my-5" style="max-width: 900px;">
-    
+
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
-        
+
         <div class="d-flex gap-2 flex-wrap">
             <form method="POST" class="m-0">
                 <button type="submit" name="save_backup_server" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Hacer Backup</button>
             </form>
         </div>
     </div>
-    
-    <?php if ($mensaje): ?> 
+
+    <?php if ($mensaje): ?>
         <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show shadow-sm" role="alert">
             <?php echo $mensaje; ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div> 
+        </div>
     <?php endif; ?>
-    
+
     <div class="row g-4 mb-5">
         <div class="col-md-6">
             <div class="card border-primary h-100 shadow-sm">
@@ -282,7 +282,7 @@ if (is_dir($backup_dir)) {
                 </div>
             </div>
         </div>
-        
+
         <div class="col-md-6">
             <div class="card border-success h-100 shadow-sm">
                 <div class="card-header bg-success text-white fw-bold d-flex justify-content-between align-items-center">
