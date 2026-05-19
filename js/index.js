@@ -376,7 +376,7 @@ document.addEventListener("DOMContentLoaded", function() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('../backend/PWA/sw.js')
       .then(registration => {
         console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
       })
