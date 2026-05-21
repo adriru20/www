@@ -69,7 +69,7 @@ $others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
 
-  <main class="container my-6">
+  <main class="containerB my-6">
     <div class="row col-md-12">
       <div class="col-md-4 mb-4">
         <div class="card border-secondary">
