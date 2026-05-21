@@ -1,2 +1,2 @@
 #!/bin/bash
-git pull origin main --allow-unrelated-histories
+git pull origin main --allow-unrelated-histories -f
