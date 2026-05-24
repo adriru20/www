@@ -335,7 +335,7 @@ elseif ($tab === 'imagenes') {
             else echo $total_images;
         ?> ítems)</span></h2>
         <div class="d-flex gap-2">
-            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥 Importar CSV</a>
+            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥Backups</a>
 
             <?php if($tab != 'imagenes'): ?>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-<?php echo $tab; ?>">
