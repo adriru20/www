@@ -340,7 +340,7 @@ elseif ($tab === 'imagenes') {
                 + Añadir <?php echo ($tab == 'objetos') ? 'Objeto' : 'Localización'; ?>
             </button>
             <?php endif; ?>
-            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥Backup</a>
+            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥 Backup</a>
         </div>
     </div>
 
