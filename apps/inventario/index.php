@@ -339,8 +339,8 @@ elseif ($tab === 'imagenes') {
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-<?php echo $tab; ?>">
                 + Añadir <?php echo ($tab == 'objetos') ? 'Objeto' : 'Localización'; ?>
             </button>
-            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥Backup</a>
             <?php endif; ?>
+            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥Backup</a>
         </div>
     </div>
 
