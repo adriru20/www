@@ -153,7 +153,7 @@ if (!empty($_GET['delete_loc'])) {
 // --- GUARDADO / EDICIÓN (POST) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Subir imagen suelta (Nueva funcionalidad)
+    // Subir imagen suelta
     if (isset($_POST['upload_img'])) {
         handleDualUpload($_FILES['img_file_cam'] ?? [], $_FILES['img_file_folder'] ?? [], $_POST['img_custom_name'] ?? '');
         header("Location: index.php?tab=imagenes"); 
@@ -345,9 +345,8 @@ elseif ($tab === 'imagenes') {
             elseif($tab == 'localizaciones') echo $count_loc; 
             else echo $total_images; 
         ?> ítems)</span></h2>
+        
         <div class="d-flex gap-2">
-            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥 Importar CSV</a>
-            
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-<?php echo $tab; ?>">
                 + Añadir <?php 
                     if($tab == 'objetos') echo 'Objeto';
@@ -355,6 +354,8 @@ elseif ($tab === 'imagenes') {
                     else echo 'Imagen';
                 ?>
             </button>
+            
+            <a href="csv.php" class="btn btn-outline-success" title="Gestionar Backups e Importaciones">💾 Backups</a>
         </div>
     </div>
 
