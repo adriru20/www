@@ -22,7 +22,7 @@
 }
 
 /* Fondos, bordes y textos */
-/* .bg-primary {
+.bg-primary {
     background-color: #FF69B4 !important;
     color: #000 !important;
 }
@@ -35,7 +35,7 @@
 .badge.bg-primary {
     background-color: #FF69B4 !important;
     color: #000 !important;
-} */
+}
 
 
 * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poopins', 'Segoe UI', sans-serif;}
