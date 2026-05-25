@@ -4,6 +4,40 @@
   color-scheme: light dark !important;
 } */
 
+:root, [data-bs-theme="dark"] {
+    --bs-primary: #FF69B4;
+    --bs-primary-rgb: 255, 105, 180;
+}
+
+/* Botones principales */
+.btn-primary {
+    --bs-btn-color: #000; /* Texto negro para que contraste bien con el rosa */
+    --bs-btn-bg: #FF69B4;
+    --bs-btn-border-color: #FF69B4;
+    --bs-btn-hover-color: #000;
+    --bs-btn-hover-bg: #ff4da6; /* Un rosa un poco más oscuro al pasar el ratón */
+    --bs-btn-hover-border-color: #ff4da6;
+    --bs-btn-active-bg: #e63995;
+    --bs-btn-active-border-color: #e63995;
+}
+
+/* Fondos, bordes y textos */
+/* .bg-primary {
+    background-color: #FF69B4 !important;
+    color: #000 !important;
+}
+.text-primary {
+    color: #FF69B4 !important;
+}
+.border-primary {
+    border-color: #FF69B4 !important;
+}
+.badge.bg-primary {
+    background-color: #FF69B4 !important;
+    color: #000 !important;
+} */
+
+
 * {margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poopins', 'Segoe UI', sans-serif;}
 
 .oculto {display: none;}
