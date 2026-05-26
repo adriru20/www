@@ -273,15 +273,15 @@ async function loadNote(fileName) {
 // FUNCIÓN PARA GESTIONAR LOS CAMPOS CONDICIONALES DE JUEGOS
 function toggleConditionals(prefix) {
     const tipoSel = document.getElementById('tipo_' + prefix);
-    if (!tipoSel) return; 
-    
+    if (!tipoSel) return;
+
     const tipo = tipoSel.value;
-    
+
     // Contenedores existentes
     const gameFields = document.getElementById('game_fields_' + prefix);
     const physFields = document.getElementById('phys_fields_' + prefix);
     const priceFields = document.getElementById('price_fields_' + prefix);
-    
+
     // Nuevos contenedores dinámicos
     const wrapperCat = document.getElementById('wrapper_cat_' + prefix);
     const wrapperTipo = document.getElementById('wrapper_tipo_' + prefix);
@@ -314,11 +314,11 @@ function toggleConditionals(prefix) {
         if (gameFields) gameFields.classList.remove('d-none');
         const formatoSel = document.getElementById('formato_' + prefix);
         const formato = formatoSel ? formatoSel.value : 'Físico';
-        
+
         if (formato === 'Físico') {
             if (physFields) physFields.classList.remove('d-none');
             const enLaCaja = document.getElementById('en_la_caja_' + prefix);
-            
+
             if (enLaCaja && enLaCaja.checked) {
                 if (priceFields) priceFields.classList.remove('d-none');
             } else {
@@ -351,13 +351,13 @@ function toggleTag(inputId, value) {
 function updatePreview(imgId, val) {
     const img = document.getElementById(imgId);
     if(!img) return;
-    
+
     if(val.trim() === '') {
         if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
     } else if (val.startsWith('http') || val.startsWith('data:')) {
-        img.src = val; 
+        img.src = val;
     } else {
-        let cleanName = val.split('/').pop(); 
+        let cleanName = val.split('/').pop();
         img.src = './img/' + cleanName;
     }
 }
@@ -365,12 +365,12 @@ function updatePreview(imgId, val) {
 function previewFile(input, imgId, txtId, customNameId, entityType) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) { 
+        reader.onload = function(e) {
             let img = document.getElementById(imgId);
-            if(img) img.src = e.target.result; 
+            if(img) img.src = e.target.result;
         }
         reader.readAsDataURL(input.files[0]);
-        
+
         let txt = document.getElementById(txtId);
         if(txt) txt.value = input.files[0].name;
 
@@ -379,9 +379,9 @@ function previewFile(input, imgId, txtId, customNameId, entityType) {
         if (form && customNameId && entityType) {
             let customNameInput = document.getElementById(customNameId);
             if (customNameInput && customNameInput.value.trim() === '') {
-                let part1 = ''; 
+                let part1 = '';
                 let part2 = '';
-                
+
                 if (entityType === 'objeto') {
                     part1 = form.querySelector('select[name="tipo"]')?.value || 'Objeto';
                     part2 = form.querySelector('input[name="titulo"]')?.value || 'SinTitulo';
@@ -389,21 +389,21 @@ function previewFile(input, imgId, txtId, customNameId, entityType) {
                     part1 = form.querySelector('input[name="categoria"]')?.value || 'Cat';
                     part2 = form.querySelector('input[name="nombre"]')?.value || 'Loc';
                 }
-                
+
                 let cleanName = `${part1}_${part2}`
                     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                     .replace(/\s+/g, '_')
-                    .replace(/[^a-zA-Z0-9_]/g, ''); 
-                
+                    .replace(/[^a-zA-Z0-9_]/g, '');
+
                 customNameInput.value = cleanName;
             }
         }
     }
 }
 
-document.addEventListener("DOMContentLoaded", function() { 
-    toggleConditionals("new"); 
-    
+document.addEventListener("DOMContentLoaded", function() {
+    toggleConditionals("new");
+
     const images = document.querySelectorAll('.placeholder-fallback');
     images.forEach(img => {
         if(!img.getAttribute('src') || img.getAttribute('src').trim() === '') {
