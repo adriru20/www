@@ -1,20 +1,5 @@
 console.log("JS funciona");
 
-// ===== PWA =====
-// REGISTRO DEL SERVICE WORKER PARA LA PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
-    navigator.serviceWorker.register('../backend/PWA/sw.js')
-      .then(registration => {
-        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
-      })
-      .catch(err => {
-        console.log('Fallo al registrar el ServiceWorker: ', err);
-      });
-  });
-}
-
 /* -- HEADER -- */
 const toggleBtn = document.querySelector('.toggle_btn')
 const toggleBtnIcon = document.querySelector('.toggle_btn i')
@@ -411,3 +396,19 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+
+// ===== PWA =====
+// REGISTRO DEL SERVICE WORKER PARA LA PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
+    navigator.serviceWorker.register('../backend/PWA/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
+      })
+      .catch(err => {
+        console.log('Fallo al registrar el ServiceWorker: ', err);
+      });
+  });
+}
