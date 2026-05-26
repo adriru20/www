@@ -1,20 +1,5 @@
 console.log("JS funciona");
 
-// ===== PWA =====
-// REGISTRO DEL SERVICE WORKER PARA LA PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
-    navigator.serviceWorker.register('../backend/PWA/sw.js')
-      .then(registration => {
-        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
-      })
-      .catch(err => {
-        console.log('Fallo al registrar el ServiceWorker: ', err);
-      });
-  });
-}
-
 /* -- HEADER -- */
 const toggleBtn = document.querySelector('.toggle_btn')
 const toggleBtnIcon = document.querySelector('.toggle_btn i')
@@ -273,22 +258,52 @@ async function loadNote(fileName) {
 // FUNCIÓN PARA GESTIONAR LOS CAMPOS CONDICIONALES DE JUEGOS
 function toggleConditionals(prefix) {
     const tipoSel = document.getElementById('tipo_' + prefix);
-    if (!tipoSel) return;
-
+    if (!tipoSel) return; 
+    
     const tipo = tipoSel.value;
+    
+    // Contenedores existentes
     const gameFields = document.getElementById('game_fields_' + prefix);
     const physFields = document.getElementById('phys_fields_' + prefix);
     const priceFields = document.getElementById('price_fields_' + prefix);
+    
+    // Nuevos contenedores dinámicos
+    const wrapperCat = document.getElementById('wrapper_cat_' + prefix);
+    const wrapperTipo = document.getElementById('wrapper_tipo_' + prefix);
+    const wrapperPlat = document.getElementById('wrapper_plat_' + prefix);
 
+    // 1. Ocultar Categoría si es Juegos o Películas (y expandir Tipo)
+    if (wrapperCat && wrapperTipo) {
+        if (tipo === 'Juegos' || tipo === 'Películas') {
+            wrapperCat.classList.add('d-none');
+            wrapperTipo.classList.remove('col-6');
+            wrapperTipo.classList.add('col-12');
+        } else {
+            wrapperCat.classList.remove('d-none');
+            wrapperTipo.classList.remove('col-12');
+            wrapperTipo.classList.add('col-6');
+        }
+    }
+
+    // 2. Mostrar Plataformas SOLO si es Juegos
+    if (wrapperPlat) {
+        if (tipo === 'Juegos') {
+            wrapperPlat.classList.remove('d-none');
+        } else {
+            wrapperPlat.classList.add('d-none');
+        }
+    }
+
+    // 3. Lógica existente para Juegos y Películas
     if (tipo === 'Juegos' || tipo === 'Películas') {
         if (gameFields) gameFields.classList.remove('d-none');
         const formatoSel = document.getElementById('formato_' + prefix);
         const formato = formatoSel ? formatoSel.value : 'Físico';
-
+        
         if (formato === 'Físico') {
             if (physFields) physFields.classList.remove('d-none');
             const enLaCaja = document.getElementById('en_la_caja_' + prefix);
-
+            
             if (enLaCaja && enLaCaja.checked) {
                 if (priceFields) priceFields.classList.remove('d-none');
             } else {
@@ -321,39 +336,37 @@ function toggleTag(inputId, value) {
 function updatePreview(imgId, val) {
     const img = document.getElementById(imgId);
     if(!img) return;
-
+    
     if(val.trim() === '') {
         if (typeof fallbackSvg !== 'undefined') img.src = fallbackSvg;
     } else if (val.startsWith('http') || val.startsWith('data:')) {
-        img.src = val;
+        img.src = val; 
     } else {
-        let cleanName = val.split('/').pop();
+        let cleanName = val.split('/').pop(); 
         img.src = './img/' + cleanName;
     }
 }
 
-// Actualizada para recibir customNameId y entityType (objeto/localizacion) y autogenerar
 function previewFile(input, imgId, txtId, customNameId, entityType) {
     if (input.files && input.files[0]) {
         let reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function(e) { 
             let img = document.getElementById(imgId);
-            if(img) img.src = e.target.result;
+            if(img) img.src = e.target.result; 
         }
         reader.readAsDataURL(input.files[0]);
-
+        
         let txt = document.getElementById(txtId);
         if(txt) txt.value = input.files[0].name;
 
-        // --- LÓGICA DE AUTO-NOMBRAMIENTO INTELIGENTE ---
+        // Auto-nombramiento inteligente
         let form = input.closest('form');
         if (form && customNameId && entityType) {
             let customNameInput = document.getElementById(customNameId);
-            // Solo lo pisamos si el usuario lo había dejado vacío
             if (customNameInput && customNameInput.value.trim() === '') {
-                let part1 = '';
+                let part1 = ''; 
                 let part2 = '';
-
+                
                 if (entityType === 'objeto') {
                     part1 = form.querySelector('select[name="tipo"]')?.value || 'Objeto';
                     part2 = form.querySelector('input[name="titulo"]')?.value || 'SinTitulo';
@@ -361,22 +374,21 @@ function previewFile(input, imgId, txtId, customNameId, entityType) {
                     part1 = form.querySelector('input[name="categoria"]')?.value || 'Cat';
                     part2 = form.querySelector('input[name="nombre"]')?.value || 'Loc';
                 }
-
-                // Función para limpiar acentos y caracteres raros
+                
                 let cleanName = `${part1}_${part2}`
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Quitar tildes
-                    .replace(/\s+/g, '_') // Cambiar espacios por guión bajo
-                    .replace(/[^a-zA-Z0-9_]/g, ''); // Quitar cosas raras (paréntesis, comillas, etc)
-
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                    .replace(/\s+/g, '_')
+                    .replace(/[^a-zA-Z0-9_]/g, ''); 
+                
                 customNameInput.value = cleanName;
             }
         }
     }
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    toggleConditionals("new");
-
+document.addEventListener("DOMContentLoaded", function() { 
+    toggleConditionals("new"); 
+    
     const images = document.querySelectorAll('.placeholder-fallback');
     images.forEach(img => {
         if(!img.getAttribute('src') || img.getAttribute('src').trim() === '') {
@@ -384,3 +396,19 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
+
+// ===== PWA =====
+// REGISTRO DEL SERVICE WORKER PARA LA PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
+    navigator.serviceWorker.register('../backend/PWA/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
+      })
+      .catch(err => {
+        console.log('Fallo al registrar el ServiceWorker: ', err);
+      });
+  });
+}
