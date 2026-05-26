@@ -1,5 +1,20 @@
 console.log("JS funciona");
 
+// ===== PWA =====
+// REGISTRO DEL SERVICE WORKER PARA LA PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
+    navigator.serviceWorker.register('../backend/PWA/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
+      })
+      .catch(err => {
+        console.log('Fallo al registrar el ServiceWorker: ', err);
+      });
+  });
+}
+
 /* -- HEADER -- */
 const toggleBtn = document.querySelector('.toggle_btn')
 const toggleBtnIcon = document.querySelector('.toggle_btn i')
@@ -272,7 +287,7 @@ function toggleConditionals(prefix) {
     const wrapperTipo = document.getElementById('wrapper_tipo_' + prefix);
     const wrapperPlat = document.getElementById('wrapper_plat_' + prefix);
 
-    // 1. Ocultar Categoría si es Juegos o Películas (y expandir Tipo)
+    // 1. Ocultar Categoría si es Juegos o Películas (y expandir Tipo para que ocupe todo)
     if (wrapperCat && wrapperTipo) {
         if (tipo === 'Juegos' || tipo === 'Películas') {
             wrapperCat.classList.add('d-none');
@@ -294,7 +309,7 @@ function toggleConditionals(prefix) {
         }
     }
 
-    // 3. Lógica existente para Juegos y Películas
+    // 3. Lógica para mostrar apartados de Juegos/Películas
     if (tipo === 'Juegos' || tipo === 'Películas') {
         if (gameFields) gameFields.classList.remove('d-none');
         const formatoSel = document.getElementById('formato_' + prefix);
@@ -397,13 +412,10 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-
-// ===== PWA =====
 // REGISTRO DEL SERVICE WORKER PARA LA PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Asegúrate de que la ruta apunte al directorio raíz donde pusiste sw.js
-    navigator.serviceWorker.register('../backend/PWA/sw.js')
+    navigator.serviceWorker.register('/apps/inventario/sw.js')
       .then(registration => {
         console.log('ServiceWorker registrado con éxito con alcance: ', registration.scope);
       })

@@ -447,7 +447,7 @@ elseif ($tab === 'imagenes') {
                     <img src="<?php echo htmlspecialchars($img); ?>" class="card-img-top memento-img placeholder-fallback" alt="Portada" loading="lazy" onerror="this.src=fallbackSvg">
                     <div class="card-body p-2 text-center d-flex flex-column justify-content-center">
                         <div class="card-title text-truncate mb-1" title="<?php echo htmlspecialchars($titulo); ?>"><?php echo htmlspecialchars($titulo); ?></div>
-                        <small class="text-info" style="font-size:0.7rem;"><?php echo htmlspecialchars($obj['tipo'] ?? ''); ?> <?php echo !empty($obj['tipo_de_objeto']) ? ' > '.$obj['tipo_de_objeto'] : ''; ?></small>
+                        <small class="text-info" style="font-size:0.7rem;"><?php echo htmlspecialchars($obj['tipo'] ?? ''); ?><?php echo !empty($obj['tipo_de_objeto']) ? ' | '.htmlspecialchars($obj['tipo_de_objeto']) : ''; ?></small>
                     </div>
                 </div>
             </div>
