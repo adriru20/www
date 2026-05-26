@@ -1,1 +1,0 @@
-apps/inventario/index.php
