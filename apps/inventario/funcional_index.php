@@ -36,7 +36,7 @@ patchDB("UPDATE inv_localizaciones SET foto_http = SUBSTRING_INDEX(foto_http, '/
 // --- CONFIGURACIÓN DE PARÁMETROS ---
 $tab = $_GET['tab'] ?? 'objetos';
 $page = max(1, isset($_GET['p']) ? (int)$_GET['p'] : 1);
-$limit = 24; 
+$limit = 24;
 $offset = ($page - 1) * $limit;
 
 $search = $_GET['q'] ?? '';
@@ -152,6 +152,15 @@ if (!empty($_GET['delete_loc'])) {
 
 // --- GUARDADO / EDICIÓN (POST) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    // Subir imagen suelta
+    if (isset($_POST['upload_img'])) {
+        handleDualUpload($_FILES['img_file_cam'] ?? [], $_FILES['img_file_folder'] ?? [], $_POST['img_custom_name'] ?? '');
+        header("Location: index.php?tab=imagenes");
+        exit();
+    }
+
+    // Renombrar imagen
     if (isset($_POST['rename_img'])) {
         $old_name = basename($_POST['old_name']);
         $new_name = preg_replace("/[^a-zA-Z0-9\-_]/", "", $_POST['new_name']);
@@ -161,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: index.php?tab=imagenes"); exit();
     }
 
+    // Guardar Objeto
     if (isset($_POST['save_obj'])) {
         $id = $_POST['id'] ?? null;
         $portada_val = $_POST['portada_http'] ?? '';
@@ -191,6 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: index.php" . urlParam([])); exit();
     }
 
+    // Guardar Localización
     if (isset($_POST['save_loc'])) {
         $id = $_POST['id'] ?? null;
         $foto_val = $_POST['foto_http'] ?? '';
@@ -334,13 +345,17 @@ elseif ($tab === 'imagenes') {
             elseif($tab == 'localizaciones') echo $count_loc;
             else echo $total_images;
         ?> ítems)</span></h2>
+
         <div class="d-flex gap-2">
-            <?php if($tab != 'imagenes'): ?>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-<?php echo $tab; ?>">
-                + Añadir <?php echo ($tab == 'objetos') ? 'Objeto' : 'Localización'; ?>
+                + Añadir <?php
+                    if($tab == 'objetos') echo 'Objeto';
+                    elseif($tab == 'localizaciones') echo 'Localización';
+                    else echo 'Imagen';
+                ?>
             </button>
-            <?php endif; ?>
-            <a href="csv.php" class="btn btn-outline-success" title="Importar datos">📥 Backup</a>
+
+            <a href="csv.php" class="btn btn-outline-success" title="Gestionar Backups e Importaciones">💾 Backups</a>
         </div>
     </div>
 
@@ -416,9 +431,9 @@ elseif ($tab === 'imagenes') {
                         <?php endif; ?>
                     </div>
                     <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1 align-items-end" style="z-index: 10;">
-                        <?php
-                        $locs = array_map('trim', explode(',', $obj['localizacion'] ?? ''));
-                        foreach($locs as $l): if($l):
+                        <?php 
+                        $locs = array_map('trim', explode(',', $obj['localizacion'] ?? '')); 
+                        foreach($locs as $l): if($l): 
                             $emoji = getEmojiForCategory($loc_map[$l] ?? '');
                         ?>
                             <span class="badge bg-dark bg-opacity-75 border border-secondary text-light shadow-sm" style="font-size: 0.7rem;"><?php echo $emoji . ' ' . htmlspecialchars($l); ?></span>
@@ -709,7 +724,7 @@ elseif ($tab === 'imagenes') {
 
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if ($loc_paginadas->num_rows > 0): ?>
-            <?php while($loc = $loc_paginadas->fetch_assoc()):
+            <?php while($loc = $loc_paginadas->fetch_assoc()): 
                 $img = renderImg($loc['foto_http'] ?? '');
             ?>
             <div class="col">
@@ -765,7 +780,7 @@ elseif ($tab === 'imagenes') {
             <div class="col-12 text-center py-5 text-muted">No se han encontrado resultados.</div>
         <?php endif; ?>
     </div>
-
+    
     <?php if ($total_pages_loc > 1): ?>
         <nav class="mt-4"><ul class="pagination justify-content-center pagination-sm">
             <?php for($i=1; $i<=$total_pages_loc; $i++): if($i == 1 || $i == $total_pages_loc || ($i >= $page-2 && $i <= $page+2)): ?>
@@ -823,7 +838,7 @@ elseif ($tab === 'imagenes') {
 
     <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
         <?php if (!empty($paginated_images)): ?>
-            <?php foreach($paginated_images as $index => $img_name):
+            <?php foreach($paginated_images as $index => $img_name): 
                 $img_url = './img/' . $img_name;
             ?>
             <div class="col">
@@ -883,6 +898,46 @@ elseif ($tab === 'imagenes') {
             <?php endif; endfor; ?>
         </ul></nav>
     <?php endif; ?>
+
+    <div class="modal fade" id="modal-imagenes" tabindex="-1">
+        <div class="modal-dialog">
+            <form class="modal-content" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Subir Imagen Independiente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="small text-muted mb-1">Seleccionar Foto / Archivo</label>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex gap-2 align-items-center">
+                                <input type="text" id="txt_new_img" class="form-control form-control-sm" placeholder="Ningún archivo seleccionado" readonly>
+
+                                <input type="file" name="img_file_cam" id="file_cam_new_img" class="d-none" accept="image/*" capture="environment" onchange="previewFile(this, 'preview_new_img', 'txt_new_img')">
+                                <input type="file" name="img_file_folder" id="file_folder_new_img" class="d-none" accept="image/*" onchange="previewFile(this, 'preview_new_img', 'txt_new_img')">
+
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_cam_new_img').click()" title="Hacer foto">📷</button>
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('file_folder_new_img').click()" title="Adjuntar archivo">📁</button>
+                                </div>
+                            </div>
+                            <div class="text-center mt-2">
+                                <img id="preview_new_img" src="" class="preview-img shadow-sm rounded" style="max-height: 200px; display: none;" onload="this.style.display='inline-block'">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="small text-muted">Nombre personalizado (Opcional, sin extensión)</label>
+                        <input type="text" name="img_custom_name" class="form-control form-control-sm" placeholder="Ej: foto_caja_vacia">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="upload_img" class="btn btn-primary w-100">Subir y Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <?php endif; ?>
 
   </main>
