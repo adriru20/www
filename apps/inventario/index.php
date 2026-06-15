@@ -91,6 +91,10 @@ function getEmojiForCategory($cat)
         return '📍';
     if (strpos($cat, 'caja') !== false)
         return '📦';
+    if (strpos($cat, 'trastero') !== false)
+        return '🗃️';
+    if (strpos($cat, 'canapé') !== false || strpos($cat, 'canapé') !== false || strpos($cat, 'canape') !== false)
+        return '🛏️';
     if (strpos($cat, 'disquetera') !== false || strpos($cat, 'cd') !== false || strpos($cat, 'dvd') !== false)
         return '💿';
     if (strpos($cat, 'estanter') !== false || strpos($cat, 'balda') !== false || strpos($cat, 'librer') !== false)
