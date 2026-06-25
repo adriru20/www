@@ -7,13 +7,13 @@
 }
 
 body {
-    background-color: #f7ede2; /* Color crema/beige del fondo */
-    color: #5c4a40; /* Color marrón oscuro para el texto */
+    background-color: #f7ede2;
+    color: #5c4a40;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    overflow: hidden; /* Evita barras de desplazamiento por los corazones */
+    overflow: hidden;
     position: relative;
 }
 
@@ -37,20 +37,33 @@ body {
     padding: 20px 40px;
 }
 
-/* Textos */
+/* Textos y Animaciones de Entrada */
 .text-section {
     flex: 1;
-    font-size: 1.3rem;
-    line-height: 1.4;
+    font-size: 1.4rem;
+    line-height: 1.5;
 }
 
-.greeting, .message {
-    margin-bottom: 15px;
+.greeting, .message { margin-bottom: 15px; }
+.signature { margin-top: 20px; font-weight: 800; color: #c9182b; }
+
+.fade-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.8s ease-out forwards;
 }
 
-.signature {
-    margin-top: 20px;
-    font-weight: 600;
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.6s; }
+.delay-3 { animation-delay: 1.0s; }
+.delay-4 { animation-delay: 1.4s; }
+.delay-5 { animation-delay: 1.8s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Árbol de Corazones */
@@ -65,8 +78,8 @@ body {
 .tree-container {
     position: absolute;
     bottom: 20px;
-    width: 300px;
-    height: 400px;
+    width: 350px;
+    height: 450px;
 }
 
 .tree-trunk {
@@ -74,101 +87,91 @@ body {
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 35px;
-    height: 120px;
-    background-color: #7b4a22;
+    width: 40px;
+    height: 140px;
+    background: linear-gradient(to right, #5c3a21, #8b5a33, #5c3a21);
     border-radius: 5px 5px 0 0;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
+/* Latido de la copa del árbol */
 #tree-leaves {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 300px;
+    height: 350px;
+    animation: pulseTree 3s infinite ease-in-out;
+    transform-origin: center 60%;
 }
 
+@keyframes pulseTree {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); } /* Un latido muy suave */
+}
+
+/* Animación "Pop" para cada corazoncito al cargar */
 .tree-heart {
     position: absolute;
-    transition: transform 0.3s ease;
+    opacity: 0;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
 /* Pie de página y Contador */
-.footer-section {
-    padding: 0 40px 15px 40px;
-}
-
-.counter-title {
-    font-size: 1.2rem;
-    margin-bottom: 5px;
-}
-
-.counter-container {
-    font-size: 1.2rem;
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-
-.number {
-    font-size: 2.2rem;
-    font-weight: 600;
-}
+.footer-section { padding: 0 40px 15px 40px; }
+.counter-title { font-size: 1.2rem; margin-bottom: 5px; font-weight: 600; }
+.counter-container { font-size: 1.2rem; display: flex; align-items: baseline; gap: 8px; }
+.number { font-size: 2.4rem; font-weight: 800; color: #c9182b; }
 
 .ground-line {
     width: 100%;
-    height: 3px;
+    height: 4px;
     background-color: #4a3424;
     position: absolute;
     bottom: 0;
     left: 0;
+    border-radius: 2px;
 }
 
-/* Animación para el efecto GIF (corazones cayendo) */
+/* Efecto GIF: Corazones cayendo con balanceo */
 #falling-hearts-container {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Para que no interfieran al hacer clic */
+    pointer-events: none;
     z-index: 1;
 }
 
-.falling-heart {
+.falling-heart-wrapper {
     position: absolute;
     top: -50px;
-    opacity: 0.8;
     animation: fall linear forwards;
 }
 
-@keyframes fall {
-    0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 0.8;
-    }
-    100% {
-        transform: translateY(110vh) rotate(360deg);
-        opacity: 0;
-    }
+.falling-heart {
+    animation: sway ease-in-out infinite alternate;
 }
 
-/* Diseño adaptativo para móviles */
+@keyframes fall {
+    to { transform: translateY(110vh); }
+}
+
+@keyframes sway {
+    from { transform: translateX(-20px) rotate(-15deg); }
+    to { transform: translateX(20px) rotate(15deg); }
+}
+
+/* Adaptabilidad móvil */
 @media (max-width: 768px) {
-    .content-wrapper {
-        flex-direction: column;
-        text-align: center;
-    }
-    .text-section {
-        margin-top: 20px;
-    }
-    .tree-container {
-        position: relative;
-        bottom: 0;
-        height: 300px;
-    }
-    .counter-container {
-        justify-content: center;
-        flex-wrap: wrap;
-    }
+    .content-wrapper { flex-direction: column; text-align: center; }
+    .text-section { margin-top: 20px; }
+    .tree-container { position: relative; bottom: 0; height: 350px; }
+    .counter-container { justify-content: center; flex-wrap: wrap; }
 }
