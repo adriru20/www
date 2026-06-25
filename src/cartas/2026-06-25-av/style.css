@@ -1,5 +1,5 @@
 /* Configuraciones generales */
-* {
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -9,78 +9,66 @@
 body {
     background-color: #f7ede2;
     color: #5c4a40;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: block;
+    width: 100%;
     min-height: 100vh;
-    overflow: hidden;
+    overflow-x: hidden;
     position: relative;
+    padding: 20px 10px;
 }
 
 /* Tarjeta Principal */
 .card {
     position: relative;
-    width: 90%;
+    width: 100%;
     max-width: 900px;
-    height: 600px;
+    margin: 40px auto;
+    background-color: transparent;
     z-index: 10;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
 }
 
+/* Distribución en bloques flotantes simulando columnas */
 .content-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-grow: 1;
-    /* padding: 20px 40px; */
-    padding: 0px 40px;
+    width: 100%;
+    display: block;
+    clear: both;
+    padding: 20px 40px;
 }
 
-/* Textos y Animación de entrada fluida */
+/* Sección Izquierda: Mensajes */
 .text-section {
-    flex: 1;
+    float: left;
+    width: 45%;
     font-size: 1.4rem;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding-top: 40px;
 }
 
-.greeting, .message { margin-bottom: 15px; }
-.signature { margin-top: 20px; font-weight: 800; color: #c9182b; }
-
-.fade-in {
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.8s ease-out forwards;
+.greeting, .message { 
+    margin-bottom: 20px; 
 }
 
-.delay-1 { animation-delay: 0.2s; }
-.delay-2 { animation-delay: 0.6s; }
-.delay-3 { animation-delay: 1.0s; }
-.delay-4 { animation-delay: 1.4s; }
-.delay-5 { animation-delay: 1.8s; }
-
-@keyframes fadeInUp {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.signature { 
+    margin-top: 25px; 
+    font-weight: 800; 
+    color: #c9182b; 
 }
 
-/* Contenedor del Árbol */
+/* Sección Derecha: Contenedor del Árbol */
 .tree-section {
-    flex: 1;
-    display: flex;
-    justify-content: center;
+    float: right;
+    width: 50%;
+    height: 450px;
     position: relative;
-    height: 100%;
 }
 
 .tree-container {
     position: absolute;
-    bottom: 20px;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 350px;
-    height: 450px;
+    height: 440px;
 }
 
 /* Capa del Tronco Realista (DETRÁS) */
@@ -100,7 +88,7 @@ body {
     filter: drop-shadow(4px 4px 10px rgba(74, 44, 20, 0.15));
 }
 
-/* Capa de las Hojas (DELANTE) + Efecto latido */
+/* Capa de las Hojas (DELANTE) */
 #tree-leaves {
     position: absolute;
     top: 0;
@@ -129,25 +117,73 @@ body {
     100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* Contador de tiempo */
-.footer-section { padding: 0 40px 15px 40px; }
-.counter-title { font-size: 1.2rem; margin-bottom: 5px; font-weight: 600; }
-.counter-container { font-size: 1.2rem; display: flex; align-items: baseline; gap: 8px; }
-.number { font-size: 2.4rem; font-weight: 800; color: #c9182b; }
+/* Pie de página y Contador */
+.footer-section { 
+    clear: both;
+    width: 100%;
+    padding: 30px 40px 15px 40px; 
+}
+
+.counter-title { 
+    font-size: 1.2rem; 
+    margin-bottom: 10px; 
+    font-weight: 600; 
+}
+
+/* Bloques en línea para que el contador no rompa su estructura */
+.counter-box {
+    display: block;
+}
+
+.counter-item {
+    display: inline-block;
+    margin-right: 15px;
+}
+
+.number { 
+    font-size: 2.4rem; 
+    font-weight: 800; 
+    color: #c9182b; 
+    vertical-align: middle;
+}
+
+.label {
+    font-size: 1.1rem;
+    margin-left: 4px;
+    vertical-align: middle;
+}
 
 .ground-line {
     width: 100%;
     height: 4px;
     background-color: #4a3424;
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    margin-top: 10px;
     border-radius: 2px;
 }
 
-/* Efecto GIF animado de fondo (Caída con viento/balanceo) */
+/* Animaciones de Entrada suaves */
+.fade-in {
+    opacity: 0;
+    transform: translateY(15px);
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 0.2s; }
+.delay-2 { animation-delay: 0.6s; }
+.delay-3 { animation-delay: 1.0s; }
+.delay-4 { animation-delay: 1.4s; }
+.delay-5 { animation-delay: 1.8s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Efecto GIF animado de fondo (Caída con balanceo) */
 #falling-hearts-container {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -175,10 +211,73 @@ body {
     to { transform: translateX(25px) rotate(20deg); }
 }
 
-/* Adaptabilidad para pantallas de móvil */
+/* ===================================================
+   DISEÑO EXCLUSIVO PARA MÓVILES (RESPONSIVE)
+   =================================================== */
 @media (max-width: 768px) {
-    .content-wrapper { flex-direction: column; text-align: center; }
-    .text-section { margin-top: 20px; }
-    .tree-container { position: relative; bottom: 0; height: 360px; }
-    .counter-container { justify-content: center; flex-wrap: wrap; }
+    body {
+        padding: 10px 5px;
+    }
+    
+    .card {
+        margin: 10px auto;
+    }
+
+    .content-wrapper {
+        padding: 10px 15px;
+    }
+
+    /* Transformación a columna única */
+    .text-section {
+        float: none;
+        width: 100%;
+        text-align: center;
+        font-size: 1.2rem;
+        padding-top: 10px;
+        margin-bottom: 20px;
+    }
+
+    .tree-section {
+        float: none;
+        width: 100%;
+        height: 310px; /* Reducimos la altura en móvil para que encaje visualmente */
+    }
+
+    /* Redimensionamos el árbol proporcionalmente */
+    .tree-container {
+        width: 260px;
+        height: 300px;
+        bottom: 0;
+    }
+
+    .tree-trunk-container {
+        width: 160px;
+        height: 220px;
+    }
+
+    #tree-leaves {
+        height: 260px;
+    }
+
+    /* Ajuste fino del Pie de página */
+    .footer-section {
+        padding: 20px 15px 10px 15px;
+        text-align: center;
+    }
+
+    .counter-title {
+        font-size: 1.1rem;
+    }
+
+    .counter-item {
+        margin: 5px 8px;
+    }
+
+    .number {
+        font-size: 1.9rem;
+    }
+
+    .label {
+        font-size: 0.9rem;
+    }
 }

@@ -23,7 +23,7 @@ updateCounter();
 
 
 // ==========================================
-// 2. GENERACIÓN MATEMÁTICA DE LAS HOJAS EN FORMA DE CORAZÓN
+// 2. GENERACIÓN MATEMÁTICA ADAPTATIVA DEL ÁRBOL
 // ==========================================
 const colors = ['#e61936', '#ff4d6d', '#ff8fa3', '#c9182b', '#ff758f', '#ff1a1a', '#f08080'];
 
@@ -35,9 +35,15 @@ function createSvgHeart(color, size) {
 
 function buildTree() {
     const leavesContainer = document.getElementById('tree-leaves');
+    leavesContainer.innerHTML = ''; // Limpiamos contenedor por si hay reajustes
+    
     const numHearts = 450; 
     let created = 0;
-    const scale = 115; // Ajuste de escala para encajar sobre las ramas vectoriales
+    
+    // DETECCIÓN RESPONSIVE: Si la pantalla es pequeña, encogemos la copa matemáticamente
+    const isMobile = window.innerWidth <= 768;
+    const scale = isMobile ? 85 : 115; 
+    const offsetY = isMobile ? -30 : -45;
 
     while (created < numHearts) {
         const x = (Math.random() * 3) - 1.5;
@@ -51,10 +57,10 @@ function buildTree() {
             heart.classList.add('tree-heart');
 
             const pxX = x * scale;
-            // Elevamos ligeramente la copa (-45) para que repose perfectamente sobre las ramas
-            const pxY = -y * scale - 45; 
+            const pxY = -y * scale + offsetY; 
 
-            const size = Math.random() * 12 + 6; // Hojas menudas y sutiles
+            // Corazones un poquito más pequeños en móvil para mantener la definición artística
+            const size = isMobile ? (Math.random() * 9 + 5) : (Math.random() * 12 + 6);
             const color = colors[Math.floor(Math.random() * colors.length)];
 
             heart.innerHTML = createSvgHeart(color, size);
@@ -62,14 +68,23 @@ function buildTree() {
             heart.style.left = `calc(50% + ${pxX}px)`;
             heart.style.top = `calc(50% + ${pxY}px)`;
             heart.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 80 - 40}deg)`;
-            heart.style.animationDelay = `${Math.random() * 1.6 + 0.4}s`;
+            heart.style.animationDelay = `${Math.random() * 1.4 + 0.2}s`;
 
             leavesContainer.appendChild(heart);
             created++;
         }
     }
 }
+
+// Construir el árbol al cargar la página
 buildTree();
+
+// Recalcular la distribución si el usuario cambia la orientación del móvil
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(buildTree, 300);
+});
 
 
 // ==========================================
@@ -77,6 +92,8 @@ buildTree();
 // ==========================================
 function spawnFallingHeart() {
     const container = document.getElementById('falling-hearts-container');
+    if (!container) return;
+    
     const wrapper = document.createElement('div');
     wrapper.classList.add('falling-heart-wrapper');
     const heart = document.createElement('div');
@@ -103,4 +120,4 @@ function spawnFallingHeart() {
     }, fallDuration * 1000);
 }
 
-setInterval(spawnFallingHeart, 500);
+setInterval(spawnFallingHeart, 600);
