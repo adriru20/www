@@ -37,7 +37,7 @@ body {
     padding: 20px 40px;
 }
 
-/* Textos y Animaciones de Entrada */
+/* Textos y Animación de entrada fluida */
 .text-section {
     flex: 1;
     font-size: 1.4rem;
@@ -66,7 +66,7 @@ body {
     }
 }
 
-/* Árbol de Corazones */
+/* Contenedor del Árbol */
 .tree-section {
     flex: 1;
     display: flex;
@@ -82,39 +82,45 @@ body {
     height: 450px;
 }
 
-.tree-trunk {
+/* Capa del Tronco Realista (DETRÁS) */
+.tree-trunk-container {
     position: absolute;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 40px;
-    height: 140px;
-    background: linear-gradient(to right, #5c3a21, #8b5a33, #5c3a21);
-    border-radius: 5px 5px 0 0;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    width: 220px;
+    height: 310px;
+    z-index: 1; 
 }
 
-/* Latido de la copa del árbol */
+.organic-trunk {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(4px 4px 10px rgba(74, 44, 20, 0.15));
+}
+
+/* Capa de las Hojas (DELANTE) + Efecto latido */
 #tree-leaves {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 350px;
-    animation: pulseTree 3s infinite ease-in-out;
-    transform-origin: center 60%;
+    height: 360px;
+    z-index: 2; 
+    animation: pulseTree 4s infinite ease-in-out;
+    transform-origin: center 70%;
 }
 
 @keyframes pulseTree {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.04); } /* Un latido muy suave */
+    50% { transform: scale(1.03); }
 }
 
-/* Animación "Pop" para cada corazoncito al cargar */
+/* Animación de nacimiento de los corazones del árbol */
 .tree-heart {
     position: absolute;
     opacity: 0;
-    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
 @keyframes popIn {
@@ -122,7 +128,7 @@ body {
     100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* Pie de página y Contador */
+/* Contador de tiempo */
 .footer-section { padding: 0 40px 15px 40px; }
 .counter-title { font-size: 1.2rem; margin-bottom: 5px; font-weight: 600; }
 .counter-container { font-size: 1.2rem; display: flex; align-items: baseline; gap: 8px; }
@@ -138,7 +144,7 @@ body {
     border-radius: 2px;
 }
 
-/* Efecto GIF: Corazones cayendo con balanceo */
+/* Efecto GIF animado de fondo (Caída con viento/balanceo) */
 #falling-hearts-container {
     position: absolute;
     top: 0;
@@ -146,7 +152,7 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 1;
+    z-index: 0;
 }
 
 .falling-heart-wrapper {
@@ -164,14 +170,14 @@ body {
 }
 
 @keyframes sway {
-    from { transform: translateX(-20px) rotate(-15deg); }
-    to { transform: translateX(20px) rotate(15deg); }
+    from { transform: translateX(-25px) rotate(-20deg); }
+    to { transform: translateX(25px) rotate(20deg); }
 }
 
-/* Adaptabilidad móvil */
+/* Adaptabilidad para pantallas de móvil */
 @media (max-width: 768px) {
     .content-wrapper { flex-direction: column; text-align: center; }
     .text-section { margin-top: 20px; }
-    .tree-container { position: relative; bottom: 0; height: 350px; }
+    .tree-container { position: relative; bottom: 0; height: 360px; }
     .counter-container { justify-content: center; flex-wrap: wrap; }
 }
