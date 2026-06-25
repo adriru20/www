@@ -34,7 +34,8 @@ body {
     justify-content: space-between;
     align-items: center;
     flex-grow: 1;
-    padding: 20px 40px;
+    /* padding: 20px 40px; */
+    padding: 0px 40px;
 }
 
 /* Textos y Animación de entrada fluida */
