@@ -20,9 +20,9 @@
         .menu-botones {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Espacio entre los botones */
+            gap: 15px;
         }
-        .btn-pdf {
+        .btn-doc {
             display: block;
             padding: 18px 20px;
             background-color: #3498db;
@@ -35,7 +35,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: background-color 0.3s ease;
         }
-        .btn-pdf:hover {
+        .btn-doc:hover {
             background-color: #2980b9;
         }
         .mensaje-vacio {
@@ -51,25 +51,27 @@
 
     <div class="menu-botones">
         <?php
-        // Ruta donde buscar los PDFs (por defecto, la carpeta actual)
-        // Si están en una carpeta, usa por ejemplo: $directorio = './pdfs/';
+        // Directorio actual
         $directorio = './';
 
-        // Usamos glob() para encontrar todos los archivos .pdf
-        $archivos_pdf = glob($directorio . '*.pdf');
+        // Buscamos todos los archivos con extensión .html
+        $archivos_html = glob($directorio . '*.html');
 
-        // Si existen PDFs, generamos un botón para cada uno
-        if (count($archivos_pdf) > 0) {
-            foreach ($archivos_pdf as $archivo) {
-                // Extraemos solo el nombre del archivo para mostrarlo limpio
+        // Si existen archivos HTML, generamos un botón para cada uno
+        if (count($archivos_html) > 0) {
+            foreach ($archivos_html as $archivo) {
+                // Extraemos el nombre del archivo
                 $nombre_archivo = basename($archivo);
-                
-                // Imprimimos el enlace con formato de botón
-                echo "<a href='" . htmlspecialchars($archivo) . "' class='btn-pdf' target='_blank'>" . htmlspecialchars($nombre_archivo) . "</a>";
+
+                // Le quitamos la extensión .html para que el botón quede más limpio
+                $nombre_limpio = pathinfo($nombre_archivo, PATHINFO_FILENAME);
+
+                // Imprimimos el enlace (abriendo en la misma pestaña)
+                echo "<a href='" . htmlspecialchars($archivo) . "' class='btn-doc'>" . htmlspecialchars($nombre_limpio) . "</a>";
             }
         } else {
-            // Si no hay PDFs, mostramos un aviso
-            echo "<p class='mensaje-vacio'>No se han encontrado archivos PDF en esta carpeta.</p>";
+            // Si no hay archivos, mostramos un aviso
+            echo "<p class='mensaje-vacio'>No se han encontrado archivos en esta carpeta.</p>";
         }
         ?>
     </div>
