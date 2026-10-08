@@ -1,9 +1,11 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 $src = '../../';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// Producción: los errores se registran, no se muestran
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 if (!isset($_SESSION['user_id'])) {
@@ -12,30 +14,21 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require $src . 'backend/config/db.php';
+require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
-// --- PARCHES AUTOMÁTICOS DE BASE DE DATOS SEGUROS ---
-function patchDB($sql)
+// Los antiguos parches de esquema ahora viven en backend/database/migrations/
+
+// Ejecuta una consulta preparada y devuelve el mysqli_result
+function queryPrepared($sql, $types = '', $params = [])
 {
     global $conn;
-    try {
-        $conn->query($sql);
-    } catch (Exception $e) {
-    }
+    $stmt = $conn->prepare($sql);
+    if ($types !== '')
+        $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    return $stmt->get_result();
 }
-
-patchDB("ALTER TABLE inv_objetos DROP FOREIGN KEY fk_loc_obj");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN cantidad INT DEFAULT 1");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN generos VARCHAR(255) DEFAULT ''");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN formato VARCHAR(50) DEFAULT 'Físico'");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN formato_de_archivo VARCHAR(255) DEFAULT ''");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN en_la_caja TINYINT(1) DEFAULT 0");
-patchDB("ALTER TABLE inv_objetos ADD COLUMN precio_de_venta DECIMAL(10,2) DEFAULT 0.00");
-patchDB("ALTER TABLE inv_localizaciones ADD COLUMN descripcion_del_contenido TEXT");
-
-patchDB("UPDATE inv_objetos SET tipo = 'Películas' WHERE tipo = 'Pelis'");
-patchDB("UPDATE inv_objetos SET portada_http = SUBSTRING_INDEX(portada_http, '/', -1) WHERE portada_http LIKE '%/%' AND portada_http NOT LIKE 'http%'");
-patchDB("UPDATE inv_localizaciones SET foto_http = SUBSTRING_INDEX(foto_http, '/', -1) WHERE foto_http LIKE '%/%' AND foto_http NOT LIKE 'http%'");
 
 // --- CONFIGURACIÓN DE PARÁMETROS ---
 $tab = $_GET['tab'] ?? 'objetos';
@@ -43,13 +36,13 @@ $page = max(1, isset($_GET['p']) ? (int) $_GET['p'] : 1);
 $limit = 24;
 $offset = ($page - 1) * $limit;
 
-$search = $_GET['q'] ?? '';
+$search = (string) ($_GET['q'] ?? '');
 $f_loc = isset($_GET['f_loc']) ? (is_array($_GET['f_loc']) ? $_GET['f_loc'] : [$_GET['f_loc']]) : [];
 $f_tipo = $_GET['f_tipo'] ?? '';
 $f_t_obj = $_GET['f_t_obj'] ?? '';
 $sort = $_GET['sort'] ?? 'newest';
 
-$q_loc = $_GET['q_loc'] ?? '';
+$q_loc = (string) ($_GET['q_loc'] ?? '');
 $f_cat_loc = $_GET['f_cat_loc'] ?? '';
 $sort_loc = $_GET['sort_loc'] ?? 'cat_nombre';
 
@@ -134,6 +127,14 @@ function handleImageUpload($fileArray, $customName = '')
     global $img_dir;
     if (isset($fileArray['name'], $fileArray['error']) && !empty($fileArray['name']) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($fileArray['name'], PATHINFO_EXTENSION));
+        // Solo imágenes reales: extensión permitida, tamaño máximo y contenido verificado
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true))
+            return null;
+        if ($fileArray['size'] > 15 * 1024 * 1024)
+            return null;
+        $info = @getimagesize($fileArray['tmp_name']);
+        if ($info === false || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true))
+            return null;
         if (!empty($customName)) {
             $cleanName = preg_replace("/[^a-zA-Z0-9\-_]/", "", $customName);
             $fileName = $cleanName . '.' . $ext;
@@ -159,6 +160,7 @@ function handleDualUpload($fileCam, $fileFolder, $customName)
 
 // --- ACCIONES DIRECTAS ---
 if (!empty($_GET['delete_img'])) {
+    csrf_verify_get();
     $img_to_delete = basename($_GET['delete_img']);
     $target = $img_dir . $img_to_delete;
     if (file_exists($target))
@@ -167,21 +169,24 @@ if (!empty($_GET['delete_img'])) {
     exit();
 }
 if (!empty($_GET['delete_obj'])) {
+    csrf_verify_get();
     $stmt = $conn->prepare("DELETE FROM inv_objetos WHERE id = ?");
     $stmt->bind_param("i", $_GET['delete_obj']);
     $stmt->execute();
-    header("Location: index.php" . urlParam(['delete_obj' => null]));
+    header("Location: index.php" . urlParam(['delete_obj' => null, 'csrf' => null]));
     exit();
 }
 if (!empty($_GET['delete_loc'])) {
+    csrf_verify_get();
     $stmt = $conn->prepare("DELETE FROM inv_localizaciones WHERE id = ?");
     $stmt->bind_param("i", $_GET['delete_loc']);
     $stmt->execute();
-    header("Location: index.php" . urlParam(['delete_loc' => null]));
+    header("Location: index.php" . urlParam(['delete_loc' => null, 'csrf' => null]));
     exit();
 }
 
 // --- GUARDADO / EDICIÓN (POST) ---
+csrf_verify_post();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Subir imagen suelta
@@ -276,23 +281,36 @@ $total_pages_loc = 0;
 if ($tab === 'objetos') {
     $where_sql = "";
     $where_parts = [];
+    $w_types = '';
+    $w_params = [];
     if ($search !== '') {
-        $s = "%" . $conn->real_escape_string($search) . "%";
-        $where_parts[] = "(objeto LIKE '$s' OR descripcion LIKE '$s' OR plataformas LIKE '$s' OR localizacion LIKE '$s')";
+        $s = "%" . $search . "%";
+        $where_parts[] = "(objeto LIKE ? OR descripcion LIKE ? OR plataformas LIKE ? OR localizacion LIKE ?)";
+        $w_types .= 'ssss';
+        array_push($w_params, $s, $s, $s, $s);
     }
     if (!empty($f_loc)) {
         $loc_queries = [];
         foreach ($f_loc as $loc_val) {
-            if ($loc_val !== '')
-                $loc_queries[] = "localizacion LIKE '%" . $conn->real_escape_string($loc_val) . "%'";
+            if (is_string($loc_val) && $loc_val !== '') {
+                $loc_queries[] = "localizacion LIKE ?";
+                $w_types .= 's';
+                $w_params[] = "%" . $loc_val . "%";
+            }
         }
         if (count($loc_queries) > 0)
             $where_parts[] = "(" . implode(" OR ", $loc_queries) . ")";
     }
-    if ($f_tipo !== '')
-        $where_parts[] = "tipo = '" . $conn->real_escape_string($f_tipo) . "'";
-    if ($f_t_obj !== '')
-        $where_parts[] = "tipo_de_objeto = '" . $conn->real_escape_string($f_t_obj) . "'";
+    if (is_string($f_tipo) && $f_tipo !== '') {
+        $where_parts[] = "tipo = ?";
+        $w_types .= 's';
+        $w_params[] = $f_tipo;
+    }
+    if (is_string($f_t_obj) && $f_t_obj !== '') {
+        $where_parts[] = "tipo_de_objeto = ?";
+        $w_types .= 's';
+        $w_params[] = $f_t_obj;
+    }
     if (count($where_parts) > 0)
         $where_sql = "WHERE " . implode(" AND ", $where_parts);
 
@@ -302,9 +320,9 @@ if ($tab === 'objetos') {
     if ($sort === 'tipo_nombre')
         $order_sql = "ORDER BY tipo ASC, objeto ASC";
 
-    $count_obj = $conn->query("SELECT COUNT(*) as total FROM inv_objetos $where_sql")->fetch_assoc()['total'];
+    $count_obj = queryPrepared("SELECT COUNT(*) as total FROM inv_objetos $where_sql", $w_types, $w_params)->fetch_assoc()['total'];
     $total_pages_obj = ceil($count_obj / $limit);
-    $objetos = $conn->query("SELECT * FROM inv_objetos $where_sql $order_sql LIMIT $offset, $limit");
+    $objetos = queryPrepared("SELECT * FROM inv_objetos $where_sql $order_sql LIMIT $offset, $limit", $w_types, $w_params);
 
     $tipos_db = $conn->query("SELECT DISTINCT tipo FROM inv_objetos WHERE tipo IS NOT NULL AND tipo != '' ORDER BY tipo");
 
@@ -351,12 +369,19 @@ if ($tab === 'objetos') {
 } elseif ($tab === 'localizaciones') {
     $where_loc_sql = "";
     $where_loc_parts = [];
+    $l_types = '';
+    $l_params = [];
     if ($q_loc !== '') {
-        $sl = "%" . $conn->real_escape_string($q_loc) . "%";
-        $where_loc_parts[] = "(nombre LIKE '$sl' OR descripcion_del_contenido LIKE '$sl' OR categoria LIKE '$sl')";
+        $sl = "%" . $q_loc . "%";
+        $where_loc_parts[] = "(nombre LIKE ? OR descripcion_del_contenido LIKE ? OR categoria LIKE ?)";
+        $l_types .= 'sss';
+        array_push($l_params, $sl, $sl, $sl);
     }
-    if ($f_cat_loc !== '')
-        $where_loc_parts[] = "categoria = '" . $conn->real_escape_string($f_cat_loc) . "'";
+    if (is_string($f_cat_loc) && $f_cat_loc !== '') {
+        $where_loc_parts[] = "categoria = ?";
+        $l_types .= 's';
+        $l_params[] = $f_cat_loc;
+    }
     if (count($where_loc_parts) > 0)
         $where_loc_sql = "WHERE " . implode(" AND ", $where_loc_parts);
 
@@ -368,9 +393,9 @@ if ($tab === 'objetos') {
     if ($sort_loc === 'newest')
         $order_loc_sql = "ORDER BY id DESC";
 
-    $count_loc = $conn->query("SELECT COUNT(*) as total FROM inv_localizaciones $where_loc_sql")->fetch_assoc()['total'];
+    $count_loc = queryPrepared("SELECT COUNT(*) as total FROM inv_localizaciones $where_loc_sql", $l_types, $l_params)->fetch_assoc()['total'];
     $total_pages_loc = ceil($count_loc / $limit);
-    $loc_paginadas = $conn->query("SELECT * FROM inv_localizaciones $where_loc_sql $order_loc_sql LIMIT $offset, $limit");
+    $loc_paginadas = queryPrepared("SELECT * FROM inv_localizaciones $where_loc_sql $order_loc_sql LIMIT $offset, $limit", $l_types, $l_params);
 
     $cat_loc_options = [];
     $cat_loc_db = $conn->query("SELECT DISTINCT categoria FROM inv_localizaciones WHERE categoria IS NOT NULL AND categoria != '' ORDER BY categoria");
@@ -552,6 +577,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="editObj<?php echo $obj['id']; ?>" tabindex="-1">
                             <div class="modal-dialog">
                                 <form class="modal-content" method="POST" enctype="multipart/form-data">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h5 class="modal-title fs-6">Editar: <?php echo htmlspecialchars($titulo); ?></h5><button
                                             type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -716,7 +742,7 @@ if ($tab === 'objetos') {
                                                 rows="2"><?php echo htmlspecialchars($obj['descripcion'] ?? ''); ?></textarea></div>
                                     </div>
                                     <div class="modal-footer justify-content-between p-2">
-                                        <a href="<?php echo urlParam(['delete_obj' => $obj['id']]); ?>"
+                                        <a href="<?php echo urlParam(['delete_obj' => $obj['id'], 'csrf' => csrf_token()]); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Borrar este objeto?')">Eliminar</a>
                                         <button type="submit" name="save_obj" class="btn btn-sm btn-primary">Guardar</button>
@@ -748,6 +774,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-objetos" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Nuevo Objeto</h5><button type="button" class="btn-close"
                                 data-bs-dismiss="modal"></button>
@@ -977,6 +1004,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="editLoc<?php echo $loc['id']; ?>" tabindex="-1">
                             <div class="modal-dialog">
                                 <form class="modal-content" method="POST" enctype="multipart/form-data">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h5 class="modal-title fs-6">Editar Localización</h5><button type="button" class="btn-close"
                                             data-bs-dismiss="modal"></button>
@@ -1037,7 +1065,7 @@ if ($tab === 'objetos') {
                                         </div>
                                     </div>
                                     <div class="modal-footer justify-content-between p-2">
-                                        <a href="<?php echo urlParam(['delete_loc' => $loc['id']]); ?>"
+                                        <a href="<?php echo urlParam(['delete_loc' => $loc['id'], 'csrf' => csrf_token()]); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Borrar localización?')">Borrar</a>
                                         <button type="submit" name="save_loc" class="btn btn-sm btn-primary">Guardar</button>
@@ -1068,6 +1096,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-localizaciones" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Nueva Localización</h5><button type="button" class="btn-close"
                                 data-bs-dismiss="modal"></button>
@@ -1159,7 +1188,7 @@ if ($tab === 'objetos') {
                                     <div class="d-flex gap-1 justify-content-center">
                                         <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
                                             data-bs-target="#modalRenombrarImg<?php echo $index; ?>" title="Renombrar">✏️</button>
-                                        <a href="?tab=imagenes&delete_img=<?php echo urlencode($img_name); ?>"
+                                        <a href="?tab=imagenes&delete_img=<?php echo urlencode($img_name); ?>&<?php echo csrf_query(); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Eliminar definitivamente la foto del servidor?')"
                                             title="Eliminar">🗑️</a>
@@ -1186,6 +1215,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="modalRenombrarImg<?php echo $index; ?>" tabindex="-1">
                             <div class="modal-dialog modal-sm modal-dialog-centered">
                                 <form class="modal-content" method="POST">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h6 class="modal-title">Renombrar Archivo</h6><button type="button" class="btn-close"
                                             data-bs-dismiss="modal"></button>
@@ -1230,6 +1260,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-imagenes" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Subir Imagen Independiente</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

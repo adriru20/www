@@ -1,11 +1,9 @@
 <?php
-  if ($_SERVER["SERVER_NAME"] == 'adriru.es') {
-    $url = "www.{$_SERVER["SERVER_NAME"]}";
-    $entorno = substr(string: $url, offset: 0, length: -10);
-  } else {
-    $url = $_SERVER["SERVER_NAME"];
-    $entorno = substr(string: $url, offset: 0, length: -10);
-  }
+// $url y $src los define backend/config/ini.php; fallback por si se incluye sin él
+if (!isset($url)) {
+  $url = $_SERVER["SERVER_NAME"];
+  if ($url === 'adriru.es') $url = "www.$url";
+}
 // Nos aseguramos de que la sesión esté iniciada para poder consultar $_SESSION
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -14,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 <header>
   <div class="navbar">
-    <div class="logo"><a href="https://<?=$url?>/"><img src="<?=$src?>/img/Astronauta-flotador.png" alt="logo"/></a></div>
+    <div class="logo"><a href="https://<?=$url?>/"><img src="<?=$src?>img/Astronauta-flotador.png" alt="logo"/></a></div>
 
     <ul class="links">
       <li><a href="https://<?=$url?>/"><b>INICIO</b></a></li>

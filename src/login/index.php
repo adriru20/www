@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 
 // Definimos la ruta relativa para los includes y las redirecciones
 $src = '../../';
@@ -20,11 +20,23 @@ global $conn;
 
 $error = '';
 
+// Límite de intentos fallidos por IP y usuario (5 en 15 minutos)
+$max_fails = 5;
+$window = 15 * 60;
+$lock_file = sys_get_temp_dir() . '/login_fails_' . md5(($_SERVER['REMOTE_ADDR'] ?? '') . '|' . strtolower(trim($_POST['user'] ?? ''))) . '.json';
+function login_fails($file, $window) {
+  $data = is_file($file) ? json_decode((string) @file_get_contents($file), true) : [];
+  $now = time();
+  return array_values(array_filter(is_array($data) ? $data : [], fn($t) => is_int($t) && $t > $now - $window));
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
   $user = trim($_POST['user'] ?? '');
   $pass = $_POST['pass'] ?? '';
 
-  if (!empty($user) && !empty($pass)) {
+  if (count(login_fails($lock_file, $window)) >= $max_fails) {
+    $error = "Demasiados intentos fallidos. Espera unos minutos.";
+  } elseif (!empty($user) && !empty($pass)) {
     // Preparamos la consulta
     $stmt = $conn->prepare("SELECT id, user, pass, permission FROM login_user WHERE user = ?");
     $stmt->bind_param("s", $user);
@@ -35,8 +47,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $row = $result->fetch_assoc();
 
       // Validamos la contraseña
-      if (password_verify($pass, $row['pass']) || $pass === $row['pass']) {
-        // Iniciar sesión
+      $ok = password_verify($pass, $row['pass']);
+      // Migración: cuentas antiguas con la contraseña sin hash. Se aceptan una última
+      // vez (solo si el valor guardado no es un hash) y se guardan ya cifradas.
+      if (!$ok && password_get_info($row['pass'])['algo'] === null && hash_equals($row['pass'], $pass)) {
+        $ok = true;
+        $row['pass'] = ''; // fuerza el rehash de abajo
+      }
+      if ($ok) {
+        // Actualizar el hash si es antiguo o estaba en texto plano
+        if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
+          $new_hash = password_hash($pass, PASSWORD_DEFAULT);
+          $up = $conn->prepare("UPDATE login_user SET pass = ? WHERE id = ?");
+          $up->bind_param("ss", $new_hash, $row['id']);
+          $up->execute();
+          $up->close();
+        }
+        // Iniciar sesión (nuevo id para evitar session fixation)
+        @unlink($lock_file);
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $row['id'];
         $_SESSION['username'] = $row['user'];
         $_SESSION['permission'] = $row['permission'];
@@ -44,10 +73,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         header("Location: {$src}");
         exit();
       } else {
+        $f = login_fails($lock_file, $window); $f[] = time();
+        @file_put_contents($lock_file, json_encode($f), LOCK_EX);
         header("Location: logout.php");
         exit();
       }
     } else {
+      $f = login_fails($lock_file, $window); $f[] = time();
+      @file_put_contents($lock_file, json_encode($f), LOCK_EX);
       header("Location: logout.php");
       exit();
     }

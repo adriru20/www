@@ -1,7 +1,8 @@
 <?php
 header("Location: ../");
+exit(); // Registro deshabilitado: sin exit el resto del script seguía ejecutándose
 
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 $src = '../../';
 
 // // MODO DEBUG
@@ -56,7 +57,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $tipo_mensaje = "success";
       } else {
         // ESTO TE DIRÁ EL ERROR REAL:
-        $mensaje = "Error de MySQL: " . $insert_stmt->error;
+        error_log("signup: " . $insert_stmt->error);
+        $mensaje = "No se pudo crear la cuenta.";
         $tipo_mensaje = "danger";
       }
       $insert_stmt->close();

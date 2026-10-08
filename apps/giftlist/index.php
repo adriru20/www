@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 $src = '../../';
 
 // Protección: Si no hay sesión, al login
@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require $src . 'backend/config/db.php';
+require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
 $my_id = $_SESSION['user_id'];
@@ -17,10 +18,15 @@ $view_user_id = isset($_GET['view']) ? $_GET['view'] : $my_id;
 $is_my_list = ($view_user_id === $my_id);
 
 // --- LÓGICA: Añadir Regalo ---
+csrf_verify_post();
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_item']) && $is_my_list) {
   $item_name = trim($_POST['item_name']);
   $item_desc = trim($_POST['item_description']);
   $item_url = trim($_POST['item_url']);
+  // Solo enlaces http(s): evita esquemas como javascript: en el href
+  if ($item_url !== '' && !preg_match('#^https?://#i', $item_url)) {
+    $item_url = '';
+  }
 
   if (!empty($item_name)) {
     $stmt = $conn->prepare("INSERT INTO gift_items (user_id, item_name, item_description, item_url) VALUES (?, ?, ?, ?)");
@@ -36,6 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_item']) && $is_my_
 
 // --- LÓGICA: Borrar Regalo ---
 if (isset($_GET['delete']) && $is_my_list) {
+  csrf_verify_get();
   $item_id = $_GET['delete'];
   $stmt = $conn->prepare("DELETE FROM gift_items WHERE id = ? AND user_id = ?");
   $stmt->bind_param("is", $item_id, $my_id);
@@ -59,7 +66,10 @@ $g_stmt->execute();
 $gifts = $g_stmt->get_result();
 
 // --- DATOS: Obtener otros usuarios para el selector ---
-$others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
+$o_stmt = $conn->prepare("SELECT id, user FROM login_user WHERE id != ?");
+$o_stmt->bind_param("s", $my_id);
+$o_stmt->execute();
+$others = $o_stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -95,6 +105,7 @@ $others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
           <div class="card mb-4 border-primary">
             <div class="card-body">
               <form action="index.php" method="POST">
+                  <?php echo csrf_input(); ?>
                 <div class="row g-3">
                   <div class="col-md-6">
                     <label class="form-label text-muted small mb-1">Nombre del regalo *</label>
@@ -146,8 +157,8 @@ $others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
                       </td>
 
                       <td>
-                        <?php if (!empty($gift['item_url'])): ?>
-                          <a href="<?php echo htmlspecialchars($gift['item_url']); ?>" target="_blank" class="btn btn-sm btn-info text-white fw-semibold">Ver más</a>
+                        <?php if (!empty($gift['item_url']) && preg_match('#^https?://#i', $gift['item_url'])): ?>
+                          <a href="<?php echo htmlspecialchars($gift['item_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-info text-white fw-semibold">Ver más</a>
                         <?php else: ?>
                           <span class="text-muted small">-</span>
                         <?php endif; ?>
@@ -155,7 +166,7 @@ $others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
 
                       <?php if ($is_my_list): ?>
                         <td class="text-center">
-                          <a href="index.php?delete=<?php echo $gift['id']; ?>"
+                          <a href="index.php?delete=<?php echo (int)$gift['id']; ?>&<?php echo csrf_query(); ?>"
                             class="btn btn-sm btn-outline-danger"
                             title="Eliminar"
                             onclick="return confirm('¿Seguro que quieres quitar esto de tu lista?')">❌</a>

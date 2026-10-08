@@ -1,0 +1,6 @@
+# El contenido del vault solo se sirve a través de api/read.php (con login).
+# Se permiten únicamente imágenes por acceso directo.
+Require all denied
+<FilesMatch "(?i)\.(png|jpe?g|gif|webp|svg)$">
+  Require all granted
+</FilesMatch>
