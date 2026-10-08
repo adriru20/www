@@ -6,82 +6,26 @@ require $src . 'backend/config/db.php';
 require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
-// --- CONFIGURACIÓN DE CARPETA BACKUP ---
-$backup_dir = './backup/';
-if (!is_dir($backup_dir)) {
-    @mkdir($backup_dir, 0750, true);
-    @file_put_contents($backup_dir . '.htaccess', "Require all denied\n");
+foreach (['config', 'helpers', 'repository', 'backup'] as $lib) {
+    require_once __DIR__ . "/lib/$lib.php";
 }
 
-// =========================================================================
-// FUNCIONES AUXILIARES DE EXPORTACIÓN
-// =========================================================================
+// Carpeta de backups (protegida: se descarga solo con sesión, desde aquí)
+$backup_dir = inv_backup_dir();
 
-function generarCsvLocalizaciones($conn, $outputStream) {
-    fputcsv($outputStream, ['portada_http', 'nombre', 'descripcion_del_contenido', 'categoria']);
-    $query = $conn->query("SELECT foto_http, nombre, descripcion_del_contenido, categoria FROM inv_localizaciones ORDER BY id ASC");
-    while ($row = $query->fetch_assoc()) {
-        fputcsv($outputStream, [
-            basename($row['foto_http'] ?? ''),
-            $row['nombre'] ?? '',
-            $row['descripcion_del_contenido'] ?? '',
-            $row['categoria'] ?? ''
-        ]);
+// Descarga de un backup: csv.php?download=NOMBRE.zip
+if (isset($_GET['download'])) {
+    $file = basename((string) $_GET['download']);
+    $path = $backup_dir . $file;
+    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'zip' && is_file($path)) {
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="' . $file . '"');
+        header('Content-Length: ' . filesize($path));
+        readfile($path);
+        exit();
     }
-}
-
-function generarCsvObjetos($conn, $outputStream) {
-    fputcsv($outputStream, [
-        'portada_http', 'objeto', 'objeto_v2', 'objeto_v3', 'localizacion', 'descripcion',
-        'tipo', 'tipo_de_objeto', 'cantidad', 'generos', 'plataformas', 'anio_de_estreno',
-        'formato', 'precio_de_venta', 'duracion', 'formato_de_archivo', 'en_la_caja'
-    ]);
-    $query = $conn->query("SELECT * FROM inv_objetos ORDER BY id ASC");
-    while ($row = $query->fetch_assoc()) {
-        fputcsv($outputStream, [
-            basename($row['portada_http'] ?? ''),
-            $row['objeto'] ?? '',
-            '', '',
-            $row['localizacion'] ?? '',
-            $row['descripcion'] ?? '',
-            $row['tipo'] ?? '',
-            $row['tipo_de_objeto'] ?? '',
-            $row['cantidad'] ?? 1,
-            $row['generos'] ?? '',
-            $row['plataformas'] ?? '',
-            $row['anio_de_estreno'] ?? '',
-            $row['formato'] ?? '',
-            $row['precio_de_venta'] ?? '0.00',
-            $row['duracion'] ?? '',
-            $row['formato_de_archivo'] ?? '',
-            $row['en_la_caja'] ?? 0
-        ]);
-    }
-}
-
-// Función centralizada para crear el ZIP en una ruta específica
-function crearBackupZip($conn, $rutaDestino) {
-    $fileLoc = tmpfile();
-    $fileObj = tmpfile();
-
-    generarCsvLocalizaciones($conn, $fileLoc);
-    generarCsvObjetos($conn, $fileObj);
-
-    $metaLoc = stream_get_meta_data($fileLoc);
-    $metaObj = stream_get_meta_data($fileObj);
-
-    $zip = new ZipArchive();
-    $exito = false;
-    if ($zip->open($rutaDestino, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
-        $zip->addFile($metaLoc['uri'], 'localizaciones.csv');
-        $zip->addFile($metaObj['uri'], 'objetos.csv');
-        $zip->close();
-        $exito = true;
-    }
-
-    fclose($fileLoc);
-    fclose($fileObj);
-    return $exito;
+    http_response_code(404);
+    exit('Backup no encontrado.');
 }
 
 // =========================================================================
@@ -93,7 +37,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'loc') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="localizaciones_' . date('Y-m-d') . '.csv"');
     $output = fopen('php://output', 'w');
-    generarCsvLocalizaciones($conn, $output);
+    inv_csv_localizaciones($output);
     fclose($output);
     exit();
 }
@@ -103,7 +47,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'obj') {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="objetos_' . date('Y-m-d') . '.csv"');
     $output = fopen('php://output', 'w');
-    generarCsvObjetos($conn, $output);
+    inv_csv_objetos($output);
     fclose($output);
     exit();
 }
@@ -121,7 +65,7 @@ if (isset($_POST['save_backup_server'])) {
     $zipName = date('Y-m-d_H-i-s') . '_inventario-adriru.es.zip';
     $rutaFinal = $backup_dir . $zipName;
 
-    if (crearBackupZip($conn, $rutaFinal)) {
+    if (inv_backup_zip($rutaFinal)) {
         $mensaje = "✅ Backup generado y guardado en el servidor correctamente: <b>$zipName</b>";
         $tipo_mensaje = "success";
     } else {
@@ -338,7 +282,7 @@ $page_styles = ['/styles/inventario.css'];
                                     <td class="small"><?php echo htmlspecialchars($b['fecha']); ?></td>
                                     <td class="small text-muted"><?php echo htmlspecialchars($b['tamano']); ?></td>
                                     <td class="text-end">
-                                        <a href="<?php echo $backup_dir . htmlspecialchars($b['nombre']); ?>" class="btn btn-sm btn-outline-info" title="Descargar" download>⬇️</a>
+                                        <a href="?download=<?php echo urlencode($b['nombre']); ?>" class="btn btn-sm btn-outline-info" title="Descargar">⬇️</a>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>

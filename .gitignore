@@ -10,3 +10,6 @@ apps/inventario/backup/*.zip
 # Sesiones de PHP (se crean en el servidor)
 backend/sessions/*
 !backend/sessions/.htaccess
+
+# Miniaturas generadas del inventario
+apps/inventario/img/_thumbs/
