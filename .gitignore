@@ -1,0 +1,7 @@
+# Credenciales y configuración local
+backend/config/db.local.php
+.vscode/sftp.json
+
+# Datos generados en el servidor
+accesos.log
+apps/inventario/backup/

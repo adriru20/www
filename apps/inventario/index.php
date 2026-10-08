@@ -134,6 +134,14 @@ function handleImageUpload($fileArray, $customName = '')
     global $img_dir;
     if (isset($fileArray['name'], $fileArray['error']) && !empty($fileArray['name']) && $fileArray['error'] === UPLOAD_ERR_OK) {
         $ext = strtolower(pathinfo($fileArray['name'], PATHINFO_EXTENSION));
+        // Solo imágenes reales: extensión permitida, tamaño máximo y contenido verificado
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true))
+            return null;
+        if ($fileArray['size'] > 15 * 1024 * 1024)
+            return null;
+        $info = @getimagesize($fileArray['tmp_name']);
+        if ($info === false || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true))
+            return null;
         if (!empty($customName)) {
             $cleanName = preg_replace("/[^a-zA-Z0-9\-_]/", "", $customName);
             $fileName = $cleanName . '.' . $ext;

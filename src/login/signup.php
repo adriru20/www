@@ -1,5 +1,6 @@
 <?php
 header("Location: ../");
+exit(); // Registro deshabilitado: sin exit el resto del script seguía ejecutándose
 
 session_start();
 $src = '../../';
