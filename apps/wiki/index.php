@@ -1,27 +1,25 @@
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
-if (!isset($_SESSION['user_id'])) {
-    header("Location: ../../src/login/");
-    exit();
-}
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_login();
+$page_title = 'Wiki';
+$page_styles = ['/styles/wiki.css'];
+$page_scripts = ['/js/vendor/marked.min.js', '/js/vendor/purify.min.js', '/apps/wiki/wiki.js'];
 ?>
-
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
-<?php include "../../backend/config/ini.php"; ?>
+<?php include __DIR__ . '/../../backend/config/ini.php'; ?>
 <body>
-  <?php include "{$src}frontend/menu.php"; ?>
+  <?php include __DIR__ . '/../../frontend/menu.php'; ?>
   <div id="app">
     <aside id="sidebar">
       <h3>Notas</h3>
-      <input type="text" id="search-input" placeholder="Buscar nota...">
+      <input type="search" id="search-input" placeholder="Buscar nota..." autocomplete="off">
       <ul id="file-list"></ul>
     </aside>
     <main id="content">
-      <div id="viewer">Selecciona una nota de la izquierda</div>
+      <div id="viewer"><p class="text-muted">Selecciona una nota de la lista.</p></div>
     </main>
   </div>
-  <?php include "{$src}frontend/footer.php"; ?>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <?php include __DIR__ . '/../../frontend/footer.php'; ?>
 </body>
 </html>

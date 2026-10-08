@@ -1,0 +1,213 @@
+/* =====================================================================
+   TEMA ADRIRU — estilos comunes de todo el sitio
+   Paleta tomada del logo (astronauta en flotador rosa/azul) sobre fondos oscuros.
+   Todo el color sale de las variables de :root: cambia aquí y cambia en toda la web.
+   ===================================================================== */
+
+:root,
+[data-bs-theme="dark"] {
+  /* Marca */
+  --brand-pink:      #ff3385;
+  --brand-pink-soft: #ff69b4;
+  --brand-blue:      #4a90e2;
+  --brand-cyan:      #7cf7ff;
+
+  /* Superficies (de más oscura a más clara) */
+  --surface-0: #15171a;   /* pie, cabecera */
+  --surface-1: #1a1c20;   /* barras laterales */
+  --surface-2: #22252a;   /* fondo de página */
+  --surface-3: #2a2e34;   /* tarjetas */
+  --surface-4: #343a42;   /* bordes, hover */
+
+  --text-main:  #e6e8ea;
+  --text-muted: #95a5a6;
+
+  --radius: .75rem;
+  --header-h: 68px;
+
+  /* Bootstrap: se reasignan sus variables para que todo componente use la paleta */
+  --bs-body-bg: var(--surface-2);
+  --bs-body-bg-rgb: 34, 37, 42;
+  --bs-body-color: var(--text-main);
+  --bs-secondary-color: var(--text-muted);
+  --bs-border-color: var(--surface-4);
+  --bs-tertiary-bg: var(--surface-3);
+  --bs-secondary-bg: var(--surface-3);
+  --bs-primary: var(--brand-blue);
+  --bs-primary-rgb: 74, 144, 226;
+  --bs-link-color: var(--brand-blue);
+  --bs-link-color-rgb: 74, 144, 226;
+  --bs-link-hover-color: var(--brand-pink);
+  --bs-link-hover-color-rgb: 255, 51, 133;
+  --bs-card-bg: var(--surface-3);
+  --bs-card-cap-bg: rgba(255, 255, 255, .03);
+  --bs-modal-bg: var(--surface-3);
+  --bs-dropdown-bg: var(--surface-3);
+  --bs-list-group-bg: var(--surface-3);
+  --bs-font-sans-serif: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ---------- Base ---------- */
+html { scroll-behavior: smooth; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  color: var(--text-main);
+}
+
+/* El contenido principal ocupa el espacio libre y empuja el pie abajo */
+body > main,
+body > #app { flex: 1 0 auto; }
+
+a { text-decoration: none; }
+a:hover { text-decoration: none; }
+
+h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
+
+.text-gradient {
+  background: linear-gradient(90deg, var(--brand-pink), var(--brand-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Contenedores de página ---------- */
+.page-container {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.75rem 1rem 3rem;
+}
+.page-wide { max-width: 1600px; }
+.page-header {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: .75rem; margin-bottom: 1.5rem;
+}
+.page-header h1, .page-header h2 { margin: 0; text-align: left; }
+
+/* ---------- Cabecera / menú ---------- */
+.site-header {
+  position: sticky; top: 0; z-index: 1030;
+  background: rgba(21, 23, 26, .88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--surface-4);
+}
+.app-navbar { min-height: var(--header-h); padding: .35rem 0; }
+.app-navbar .navbar-brand {
+  display: flex; align-items: center; gap: .6rem;
+  font-weight: 800; font-size: 1.25rem; color: #fff; letter-spacing: .02em;
+}
+.app-navbar .navbar-brand img { object-fit: contain; }
+.app-navbar .nav-link {
+  color: var(--text-muted);
+  font-weight: 600; font-size: .95rem;
+  padding: .55rem .85rem; border-radius: .5rem;
+  transition: color .15s, background .15s;
+}
+.app-navbar .nav-link i { margin-right: .3rem; }
+.app-navbar .nav-link:hover { color: #fff; background: rgba(255, 255, 255, .06); }
+.app-navbar .nav-link.active { color: #fff; box-shadow: inset 0 -2px 0 var(--brand-pink); border-radius: .5rem .5rem 0 0; }
+.app-navbar .nav-cta {
+  color: #fff; background: linear-gradient(135deg, var(--brand-pink), var(--brand-blue));
+}
+.app-navbar .nav-cta:hover { filter: brightness(1.1); color: #fff; }
+.navbar-toggler { border-color: var(--surface-4); }
+.navbar-toggler:focus { box-shadow: 0 0 0 .2rem rgba(255, 51, 133, .3); }
+.navbar-toggler-icon { filter: invert(1) grayscale(1) brightness(1.5); }
+@media (max-width: 991.98px) {
+  .app-navbar .navbar-collapse { padding: .75rem 0 .5rem; }
+  .app-navbar .nav-link.active { box-shadow: inset 3px 0 0 var(--brand-pink); border-radius: .5rem; }
+}
+
+/* ---------- Pie ---------- */
+.site-footer {
+  flex-shrink: 0;
+  padding: 1rem 0;
+  background: var(--surface-0);
+  border-top: 1px solid var(--surface-4);
+  color: var(--text-muted);
+  font-size: .85rem; text-align: center;
+}
+
+/* ---------- Componentes Bootstrap con la paleta ---------- */
+.btn-primary {
+  --bs-btn-bg: var(--brand-blue);
+  --bs-btn-border-color: var(--brand-blue);
+  --bs-btn-hover-bg: #3a7bc8;
+  --bs-btn-hover-border-color: #3a7bc8;
+  --bs-btn-active-bg: #336aaa;
+  --bs-btn-active-border-color: #336aaa;
+  --bs-btn-focus-shadow-rgb: 74, 144, 226;
+}
+.btn-accent {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--brand-pink);
+  --bs-btn-border-color: var(--brand-pink);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #e62874;
+  --bs-btn-hover-border-color: #e62874;
+  --bs-btn-active-bg: #cc2266;
+  --bs-btn-active-border-color: #cc2266;
+  --bs-btn-focus-shadow-rgb: 255, 51, 133;
+}
+.card { border-color: var(--surface-4); border-radius: var(--radius); }
+.card.border-secondary { border-color: var(--surface-4) !important; }
+.form-control, .form-select {
+  background-color: var(--surface-1);
+  border-color: var(--surface-4);
+}
+.form-control:focus, .form-select:focus {
+  background-color: var(--surface-1);
+  border-color: var(--brand-pink);
+  box-shadow: 0 0 0 .2rem rgba(255, 51, 133, .25);
+}
+.form-check-input:checked { background-color: var(--brand-pink); border-color: var(--brand-pink); }
+.list-group-item.active { background-color: var(--brand-blue); border-color: var(--brand-blue); }
+.table { --bs-table-bg: transparent; }
+.modal-content { border-color: var(--surface-4); border-radius: var(--radius); }
+.pagination { --bs-pagination-bg: var(--surface-3); --bs-pagination-border-color: var(--surface-4);
+  --bs-pagination-active-bg: var(--brand-pink); --bs-pagination-active-border-color: var(--brand-pink); }
+::selection { background: rgba(255, 51, 133, .45); }
+
+/* ---------- Inicio: tarjetas de acceso a cada app ---------- */
+.hero { text-align: center; padding: 2.5rem 0 1.5rem; }
+.hero img { width: 150px; height: auto; filter: drop-shadow(0 8px 24px rgba(255, 51, 133, .35)); }
+.hero h1 { margin-top: 1rem; font-size: clamp(1.9rem, 5vw, 2.8rem); }
+.hero p { color: var(--text-muted); margin: .25rem 0 0; }
+
+.app-grid {
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  margin-top: 1.5rem;
+}
+.app-card {
+  display: flex; flex-direction: column; gap: .35rem;
+  padding: 1.4rem; color: var(--text-main);
+  background: var(--surface-3);
+  border: 1px solid var(--surface-4); border-radius: var(--radius);
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.app-card:hover {
+  color: var(--text-main); transform: translateY(-3px);
+  border-color: var(--brand-pink); box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+}
+.app-card .app-icon {
+  width: 46px; height: 46px; display: grid; place-items: center;
+  font-size: 1.25rem; color: #fff; border-radius: .75rem; margin-bottom: .5rem;
+  background: linear-gradient(135deg, var(--brand-pink), var(--brand-blue));
+}
+.app-card h2 { font-size: 1.15rem; margin: 0; }
+.app-card p { margin: 0; color: var(--text-muted); font-size: .9rem; }
+
+/* ---------- Login ---------- */
+.auth-wrap { display: grid; place-items: center; flex: 1 0 auto; padding: 2rem 1rem; }
+.auth-card { width: 100%; max-width: 420px; padding: 2rem; }
+.auth-card .auth-logo { display: block; width: 90px; margin: 0 auto 1rem; }
+.auth-card h1 { font-size: 1.6rem; text-align: center; margin-bottom: 1.5rem; }
+
+/* ---------- Parking ---------- */
+.parking-actions { display: grid; gap: .75rem; max-width: 420px; }
+@media (min-width: 576px) { .parking-actions { grid-template-columns: repeat(3, 1fr); max-width: none; } }

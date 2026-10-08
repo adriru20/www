@@ -1,0 +1,37 @@
+/* INVENTARIO (Memento) — tarjetas, filtros y etiquetas */
+.memento-card { transition: transform .2s, border-color .2s, box-shadow .2s; height: 100%; cursor: pointer; }
+.memento-card:hover {
+  transform: scale(1.03); border-color: var(--brand-pink); z-index: 10;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .5);
+}
+
+/* Portadas (proporción 540x720) */
+.memento-img {
+  width: 100%; aspect-ratio: 540 / 720; object-fit: cover;
+  background: var(--surface-1); border-bottom: 1px solid var(--surface-4);
+}
+
+.card-title { font-size: .85rem; font-weight: 600; line-height: 1.2; }
+.badge-loc {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0, 0, 0, .8); font-size: .7rem; border: 1px solid #555;
+}
+
+.search-container { background: var(--surface-1); border-radius: .6rem; padding: .6rem; border: 1px solid var(--surface-4); }
+.toolbar { background: var(--surface-1); border-radius: .6rem; padding: 1rem; border: 1px solid var(--surface-4); }
+
+/* Etiquetas múltiples (localizaciones y plataformas) */
+.tag-container {
+  max-height: 80px; overflow-y: auto; background: rgba(0, 0, 0, .2);
+  border-radius: 4px; padding: 6px; border: 1px solid var(--surface-4);
+}
+.tag-btn { font-size: .7rem; padding: 2px 6px; margin: 2px; cursor: pointer; transition: .2s; }
+.tag-btn:hover { background: var(--brand-pink) !important; border-color: var(--brand-pink) !important; color: #fff !important; }
+
+/* Miniaturas de los modales de añadir/editar */
+.preview-img, .preview-loc {
+  height: 60px; object-fit: cover; border-radius: 4px;
+  border: 1px solid #555; background: var(--surface-1);
+}
+.preview-img { width: 45px; }
+.preview-loc { width: 60px; }
