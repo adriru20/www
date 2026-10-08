@@ -1,52 +1,37 @@
 <?php
-// Asegurarnos de que la sesión esté iniciada
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Arranque común de las páginas: sesión, rutas, cabecera HTML y funciones.
+require_once __DIR__ . '/session.php';
+
+// Raíz del proyecto en disco y ruta relativa desde la página actual hasta ella ($src).
+// Se calcula por la profundidad del script, sin depender del dominio ni de rutas del servidor.
+$project_root = realpath(__DIR__ . '/../..');
+$script_dir   = dirname(realpath($_SERVER['SCRIPT_FILENAME']));
+$depth = 0;
+if (strpos($script_dir, $project_root) === 0) {
+  $rel = trim(substr($script_dir, strlen($project_root)), DIRECTORY_SEPARATOR);
+  $depth = ($rel === '') ? 0 : count(explode(DIRECTORY_SEPARATOR, $rel));
+}
+$src = $depth === 0 ? './' : str_repeat('../', $depth);
+
+// Host para los enlaces absolutos del menú (adriru.es -> www.adriru.es)
+$url = $_SERVER["SERVER_NAME"];
+if ($url === 'adriru.es') {
+  $url = "www.$url";
 }
 
-// Rutas donde NO queremos exigir login para no hacer un bucle de redirecciones
-$current_page = basename($_SERVER['PHP_SELF']);
-$allowed_pages = ['signup.php', 'login.php', 'logout.php', 'index.php',]; // Ajusta según tu estructura
-
-// Comprobar si NO hay una sesión activa de usuario
+// Sin sesión solo se permite el área de login (las páginas públicas no incluyen este fichero)
 if (!isset($_SESSION['user_id'])) {
-
-    // Aquí defines la ruta raíz o índice público
-    $redirect_url = '../../index.php'; // Cambiar por la ruta correcta si estás en subcarpetas
-
-    // Previene bucle infinito si ya estás en el index.php o ficheros permitidos
-    if (!in_array($current_page, $allowed_pages)) {
-        header("Location: " . $redirect_url);
-        exit();
-    }
+  $in_login_area = strpos(str_replace('\\', '/', $script_dir), '/src/login') !== false;
+  if (!$in_login_area) {
+    header("Location: {$src}src/login/");
+    exit();
+  }
 }
 
-// Detectar el entorno
-unset($url); unset($entorno);
-if ($_SERVER["SERVER_NAME"] == 'adriru.es') {
-  $url = "www.{$_SERVER["SERVER_NAME"]}";
-  $entorno = substr(string: $url, offset: 0, length: -10);
-} else {
-  $url = $_SERVER["SERVER_NAME"];
-  $entorno = substr(string: $url, offset: 0, length: -10);
-}
-// Detectar la ruta relativa
-unset($src);
-if (getcwd() === "/homepages/28/d1007113302/htdocs/$entorno") {
-  $src = "./";
-} else {
-  $src = "../../";
-}
 include "{$src}backend/config/environment.php";
 include "{$src}frontend/head.php";
-// Incluye todos los ficheros de funciones
-unset($directory);
-$directory = "{$src}backend/functions/";
-$directorio=opendir("$directory");
-while ($archivo = readdir($directorio)) {
-  if (($archivo!=".")and($archivo!="..")) {
-    include "{$directory}$archivo";
-  } else {
-    $archivo=null;
-  }
+
+// Carga todas las funciones de backend/functions/ (solo ficheros .php)
+foreach (glob(__DIR__ . '/../functions/*.php') as $archivo) {
+  include_once $archivo;
 }

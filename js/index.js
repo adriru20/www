@@ -158,10 +158,11 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // REGISTRO DEL SERVICE WORKER PARA LA PWA
-if ("serviceWorker" in navigator) {
+// Solo se registra en la app de inventario (el SW cubre únicamente /apps/inventario/)
+if ("serviceWorker" in navigator && location.pathname.startsWith("/apps/inventario/")) {
 	window.addEventListener("load", () => {
 		navigator.serviceWorker
-			.register("/apps/inventario/sw.js")
+			.register("/apps/inventario/sw.js", { scope: "/apps/inventario/" })
 			.then((registration) => {
 				console.log(
 					"ServiceWorker registrado con éxito con alcance: ",

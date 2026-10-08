@@ -4,9 +4,24 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Comprobar sintaxis PHP
+        run: |
+          find . -name '*.php' -not -path './apps/wiki/vault/*' -print0 \
+            | xargs -0 -n1 php -l > /dev/null
+
   deploy:
+    needs: lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Descargar el código del repo
@@ -15,16 +30,43 @@ jobs:
       - name: Instalar lftp
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Sincronizar vía SFTP Puro
+      # Clave del servidor SFTP: guarda en el secret SFTP_KNOWN_HOST la línea de
+      # known_hosts (ssh-keyscan -t ed25519 <host>) verificada la primera vez a mano.
+      - name: Configurar verificación de clave del servidor
+        env:
+          KNOWN_HOST: ${{ secrets.SFTP_KNOWN_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          if [ -n "$KNOWN_HOST" ]; then
+            echo "$KNOWN_HOST" > ~/.ssh/known_hosts
+            echo "SFTP_STRICT=yes" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Falta el secret SFTP_KNOWN_HOST: se acepta cualquier clave del servidor (inseguro)."
+            echo "SFTP_STRICT=no" >> "$GITHUB_ENV"
+          fi
+
+      - name: Sincronizar vía SFTP
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
           FTP_HOST: ${{ secrets.FTP_SERVER }}
         run: |
+          # No se usa --delete a propósito: en el servidor viven ficheros que no están en Git
+          # (db.local.php, imágenes subidas, backups, logs).
+          if [ "$SFTP_STRICT" = "no" ]; then
+            AUTOCONFIRM="set sftp:auto-confirm yes"
+          else
+            AUTOCONFIRM="set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes\""
+          fi
           lftp -c "
-          set sftp:auto-confirm yes
+          $AUTOCONFIRM
           open sftp://$FTP_HOST
           user $FTP_USER \"$FTP_PASS\"
-          mirror -R -v --exclude .git/ --exclude .github/ ./ /homepages/28/d1007113302/htdocs/www/
+          mirror -R -v \
+            --exclude .git/ --exclude .github/ --exclude .vscode/ \
+            --exclude apps/wiki/vault/.obsidian/ \
+            --exclude backend/logs/ --exclude apps/inventario/backup/ \
+            --exclude README.md --exclude .gitignore \
+            ./ /homepages/28/d1007113302/htdocs/www/
           bye
           "

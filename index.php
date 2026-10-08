@@ -8,7 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
-<?php include "{$src}backend/config/ini.php"; save_ip(); ?>
+<?php include __DIR__ . "/backend/config/ini.php"; save_ip(); ?>
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
   <nav class="container homepage">
