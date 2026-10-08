@@ -12,6 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require $src . 'backend/config/db.php';
+require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
 // --- PARCHES AUTOMÁTICOS DE BASE DE DATOS SEGUROS ---
@@ -167,6 +168,7 @@ function handleDualUpload($fileCam, $fileFolder, $customName)
 
 // --- ACCIONES DIRECTAS ---
 if (!empty($_GET['delete_img'])) {
+    csrf_verify_get();
     $img_to_delete = basename($_GET['delete_img']);
     $target = $img_dir . $img_to_delete;
     if (file_exists($target))
@@ -175,21 +177,24 @@ if (!empty($_GET['delete_img'])) {
     exit();
 }
 if (!empty($_GET['delete_obj'])) {
+    csrf_verify_get();
     $stmt = $conn->prepare("DELETE FROM inv_objetos WHERE id = ?");
     $stmt->bind_param("i", $_GET['delete_obj']);
     $stmt->execute();
-    header("Location: index.php" . urlParam(['delete_obj' => null]));
+    header("Location: index.php" . urlParam(['delete_obj' => null, 'csrf' => null]));
     exit();
 }
 if (!empty($_GET['delete_loc'])) {
+    csrf_verify_get();
     $stmt = $conn->prepare("DELETE FROM inv_localizaciones WHERE id = ?");
     $stmt->bind_param("i", $_GET['delete_loc']);
     $stmt->execute();
-    header("Location: index.php" . urlParam(['delete_loc' => null]));
+    header("Location: index.php" . urlParam(['delete_loc' => null, 'csrf' => null]));
     exit();
 }
 
 // --- GUARDADO / EDICIÓN (POST) ---
+csrf_verify_post();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Subir imagen suelta
@@ -560,6 +565,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="editObj<?php echo $obj['id']; ?>" tabindex="-1">
                             <div class="modal-dialog">
                                 <form class="modal-content" method="POST" enctype="multipart/form-data">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h5 class="modal-title fs-6">Editar: <?php echo htmlspecialchars($titulo); ?></h5><button
                                             type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -724,7 +730,7 @@ if ($tab === 'objetos') {
                                                 rows="2"><?php echo htmlspecialchars($obj['descripcion'] ?? ''); ?></textarea></div>
                                     </div>
                                     <div class="modal-footer justify-content-between p-2">
-                                        <a href="<?php echo urlParam(['delete_obj' => $obj['id']]); ?>"
+                                        <a href="<?php echo urlParam(['delete_obj' => $obj['id'], 'csrf' => csrf_token()]); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Borrar este objeto?')">Eliminar</a>
                                         <button type="submit" name="save_obj" class="btn btn-sm btn-primary">Guardar</button>
@@ -756,6 +762,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-objetos" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Nuevo Objeto</h5><button type="button" class="btn-close"
                                 data-bs-dismiss="modal"></button>
@@ -985,6 +992,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="editLoc<?php echo $loc['id']; ?>" tabindex="-1">
                             <div class="modal-dialog">
                                 <form class="modal-content" method="POST" enctype="multipart/form-data">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h5 class="modal-title fs-6">Editar Localización</h5><button type="button" class="btn-close"
                                             data-bs-dismiss="modal"></button>
@@ -1045,7 +1053,7 @@ if ($tab === 'objetos') {
                                         </div>
                                     </div>
                                     <div class="modal-footer justify-content-between p-2">
-                                        <a href="<?php echo urlParam(['delete_loc' => $loc['id']]); ?>"
+                                        <a href="<?php echo urlParam(['delete_loc' => $loc['id'], 'csrf' => csrf_token()]); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Borrar localización?')">Borrar</a>
                                         <button type="submit" name="save_loc" class="btn btn-sm btn-primary">Guardar</button>
@@ -1076,6 +1084,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-localizaciones" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Nueva Localización</h5><button type="button" class="btn-close"
                                 data-bs-dismiss="modal"></button>
@@ -1167,7 +1176,7 @@ if ($tab === 'objetos') {
                                     <div class="d-flex gap-1 justify-content-center">
                                         <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
                                             data-bs-target="#modalRenombrarImg<?php echo $index; ?>" title="Renombrar">✏️</button>
-                                        <a href="?tab=imagenes&delete_img=<?php echo urlencode($img_name); ?>"
+                                        <a href="?tab=imagenes&delete_img=<?php echo urlencode($img_name); ?>&<?php echo csrf_query(); ?>"
                                             class="btn btn-sm btn-outline-danger"
                                             onclick="return confirm('¿Eliminar definitivamente la foto del servidor?')"
                                             title="Eliminar">🗑️</a>
@@ -1194,6 +1203,7 @@ if ($tab === 'objetos') {
                         <div class="modal fade" id="modalRenombrarImg<?php echo $index; ?>" tabindex="-1">
                             <div class="modal-dialog modal-sm modal-dialog-centered">
                                 <form class="modal-content" method="POST">
+                                    <?php echo csrf_input(); ?>
                                     <div class="modal-header">
                                         <h6 class="modal-title">Renombrar Archivo</h6><button type="button" class="btn-close"
                                             data-bs-dismiss="modal"></button>
@@ -1238,6 +1248,7 @@ if ($tab === 'objetos') {
             <div class="modal fade" id="modal-imagenes" tabindex="-1">
                 <div class="modal-dialog">
                     <form class="modal-content" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <div class="modal-header">
                             <h5 class="modal-title">Subir Imagen Independiente</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

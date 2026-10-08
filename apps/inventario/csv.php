@@ -9,6 +9,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require $src . 'backend/config/db.php';
+require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
 // --- CONFIGURACIÓN DE CARPETA BACKUP ---
@@ -115,6 +116,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'obj') {
 // =========================================================================
 // PROCESAMIENTO DE FORMULARIOS (POST) Y MENSAJES
 // =========================================================================
+csrf_verify_post();
 $mensaje = '';
 $tipo_mensaje = '';
 
@@ -254,6 +256,7 @@ if (is_dir($backup_dir)) {
 
         <div class="d-flex gap-2 flex-wrap">
             <form method="POST" class="m-0">
+                <?php echo csrf_input(); ?>
                 <button type="submit" name="save_backup_server" class="btn btn-warning fw-bold text-dark shadow-sm">📦 Hacer Backup</button>
             </form>
         </div>
@@ -276,6 +279,7 @@ if (is_dir($backup_dir)) {
                 <div class="card-body d-flex flex-column justify-content-between">
                     <p class="small text-muted mb-3">Sube un archivo .CSV para rellenar las localizaciones de tus almacenes, cajas o disqueteras.</p>
                     <form method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <input type="file" name="file_loc" class="form-control mb-3" accept=".csv" required>
                         <button type="submit" name="import_loc" class="btn btn-primary w-100 fw-bold">📤 Importar CSV</button>
                     </form>
@@ -292,6 +296,7 @@ if (is_dir($backup_dir)) {
                 <div class="card-body d-flex flex-column justify-content-between">
                     <p class="small text-muted mb-3">Sube un archivo .CSV para añadir de golpe juegos, películas u objetos dentro de sus localizaciones.</p>
                     <form method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_input(); ?>
                         <input type="file" name="file_obj" class="form-control mb-3" accept=".csv" required>
                         <button type="submit" name="import_obj" class="btn btn-success w-100 fw-bold">📤 Importar CSV</button>
                     </form>
@@ -310,6 +315,7 @@ if (is_dir($backup_dir)) {
                 <div class="p-4 text-center text-muted">No hay copias de seguridad guardadas en la carpeta <code>./backup/</code>.</div>
             <?php else: ?>
                 <form method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar los backups seleccionados?');">
+                    <?php echo csrf_input(); ?>
                     <div class="table-responsive">
                         <table class="table table-dark table-hover table-striped m-0 align-middle">
                             <thead>

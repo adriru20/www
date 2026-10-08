@@ -35,8 +35,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       $row = $result->fetch_assoc();
 
       // Validamos la contraseña
-      if (password_verify($pass, $row['pass']) || $pass === $row['pass']) {
-        // Iniciar sesión
+      $ok = password_verify($pass, $row['pass']);
+      // Migración: cuentas antiguas con la contraseña sin hash. Se aceptan una última
+      // vez (solo si el valor guardado no es un hash) y se guardan ya cifradas.
+      if (!$ok && password_get_info($row['pass'])['algo'] === null && hash_equals($row['pass'], $pass)) {
+        $ok = true;
+        $row['pass'] = ''; // fuerza el rehash de abajo
+      }
+      if ($ok) {
+        // Actualizar el hash si es antiguo o estaba en texto plano
+        if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
+          $new_hash = password_hash($pass, PASSWORD_DEFAULT);
+          $up = $conn->prepare("UPDATE login_user SET pass = ? WHERE id = ?");
+          $up->bind_param("ss", $new_hash, $row['id']);
+          $up->execute();
+          $up->close();
+        }
+        // Iniciar sesión (nuevo id para evitar session fixation)
+        session_regenerate_id(true);
         $_SESSION['user_id'] = $row['id'];
         $_SESSION['username'] = $row['user'];
         $_SESSION['permission'] = $row['permission'];
