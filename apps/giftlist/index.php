@@ -1,12 +1,6 @@
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
-$src = '../../';
-
-// Protección: Si no hay sesión, al login
-if (!isset($_SESSION['user_id'])) {
-  header("Location: {$src}src/login/");
-  exit();
-}
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_login();
 
 require $src . 'backend/config/db.php';
 require_once $src . 'backend/functions/csrf.php';
@@ -65,6 +59,8 @@ $g_stmt->bind_param("s", $view_user_id);
 $g_stmt->execute();
 $gifts = $g_stmt->get_result();
 
+$page_title = 'Gift list';
+
 // --- DATOS: Obtener otros usuarios para el selector ---
 $o_stmt = $conn->prepare("SELECT id, user FROM login_user WHERE id != ?");
 $o_stmt->bind_param("s", $my_id);
@@ -79,7 +75,7 @@ $others = $o_stmt->get_result();
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
 
-  <main class="containerB my-6">
+  <main class="page-container">
     <div class="row col-md-12">
       <div class="col-md-4 mb-4">
         <div class="card border-secondary">

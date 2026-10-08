@@ -1,9 +1,9 @@
 // Service Worker de Inventario. Vive en /apps/inventario/ para que su alcance sea esa app.
-const CACHE_NAME = 'inventario-cache-v2';
+const CACHE_NAME = 'inventario-cache-v3';
 const urlsToCache = [
   '/apps/inventario/',
-  '/js/index.js',
-  '/styles/style.css',
+  '/apps/inventario/inventario.js',
+  '/styles/theme.css',
   '/img/icon-192.png'
 ];
 

@@ -1,17 +1,12 @@
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
-$src = '../../';
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_login();
 
 // Producción: los errores se registran, no se muestran
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
-
-if (!isset($_SESSION['user_id'])) {
-    header("Location: {$src}src/login/index.php");
-    exit();
-}
 
 require $src . 'backend/config/db.php';
 require_once $src . 'backend/functions/csrf.php';
@@ -420,6 +415,11 @@ if ($tab === 'objetos') {
 }
 ?>
 
+<?php
+$page_title = 'Inventario';
+$page_styles = ['/styles/inventario.css'];
+$page_scripts = ['/apps/inventario/inventario.js'];
+?>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
 <?php include "{$src}backend/config/ini.php"; ?>
@@ -431,7 +431,7 @@ if ($tab === 'objetos') {
 
     <?php include "{$src}frontend/menu.php"; ?>
 
-    <main class="container-fluid px-4 my-4">
+    <main class="page-container page-wide">
         <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
             <h2 class="mb-0">📦 Inventario <span class="text-info fs-5">(<?php
             if ($tab == 'objetos')

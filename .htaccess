@@ -8,3 +8,11 @@
 <FilesMatch "(?i)(\.(log|sql|zip|bak|backup[0-9]*)|db\.local\.php|sftp\.json)$">
   Require all denied
 </FilesMatch>
+
+# Una sola dirección para la web: adriru.es -> www.adriru.es.
+# La cookie de sesión es distinta en cada dirección: si se mezclan, el login se pide dos veces.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_HOST} ^adriru\.es$ [NC]
+  RewriteRule ^(.*)$ https://www.adriru.es/$1 [R=301,L]
+</IfModule>

@@ -1,0 +1,99 @@
+/* WIKI — visor de notas Markdown (usa las variables de theme.css) */
+#app {
+  display: flex;
+  width: 100%;
+  min-height: calc(100vh - var(--header-h));
+  background: var(--surface-2);
+  color: var(--text-main);
+}
+
+#sidebar {
+  width: 300px; flex-shrink: 0;
+  background: var(--surface-1);
+  padding: 1.25rem;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--header-h));
+  position: sticky; top: var(--header-h);
+  border-right: 1px solid var(--surface-4);
+}
+#sidebar h3 {
+  margin: 0 0 .75rem;
+  color: var(--brand-blue);
+  text-transform: uppercase; font-size: .85rem; letter-spacing: 1px;
+}
+
+#search-input {
+  width: 100%;
+  padding: .6rem .75rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--surface-4); border-radius: .5rem;
+  background: var(--surface-2); color: #fff;
+  transition: border-color .2s, box-shadow .2s;
+}
+#search-input::placeholder { color: #6b7480; }
+#search-input:focus {
+  outline: none; border-color: var(--brand-pink);
+  box-shadow: 0 0 0 .2rem rgba(255, 51, 133, .25);
+}
+
+#sidebar ul { list-style: none; padding-left: 14px; margin: 0; }
+#file-list > ul { padding-left: 0; }
+#sidebar li { list-style: none; }
+
+.folder-header {
+  cursor: pointer; padding: .45rem .5rem; font-weight: 600;
+  border-radius: .4rem; user-select: none; transition: background .2s, color .2s;
+}
+.folder-header:hover { background: var(--surface-3); color: var(--brand-blue); }
+
+.file {
+  cursor: pointer; padding: .4rem .5rem; border-radius: .4rem;
+  color: var(--text-muted); font-size: .93rem; transition: all .2s;
+  border-left: 3px solid transparent;
+}
+.file:hover { background: var(--surface-3); color: #fff; border-left-color: var(--brand-pink); }
+.file.active { color: #fff; border-left-color: var(--brand-pink); background: var(--surface-3); }
+
+#content { flex: 1; min-width: 0; padding: 2.5rem 1.5rem; background: var(--surface-2); }
+#viewer { max-width: 820px; margin: auto; line-height: 1.7; font-size: 1.05rem; color: var(--text-main); }
+#viewer h1, #viewer h2, #viewer h3 {
+  color: #fff; border-bottom: 1px solid var(--surface-4);
+  padding-bottom: .3rem; margin-top: 1.5rem;
+}
+.internal-link, #viewer a { color: var(--brand-blue); font-weight: 600; cursor: pointer; transition: color .2s; }
+.internal-link:hover, #viewer a:hover { color: var(--brand-pink); text-decoration: underline; }
+
+#viewer pre {
+  background: var(--surface-1); padding: 1rem; border-radius: .6rem;
+  overflow-x: auto; border: 1px solid var(--surface-4); margin: 1rem 0;
+}
+#viewer code {
+  font-family: 'Courier New', Courier, monospace;
+  background: var(--surface-1); padding: 2px 5px; border-radius: 4px; color: var(--brand-pink);
+}
+#viewer pre code { padding: 0; background: none; color: inherit; }
+
+#viewer table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: .95rem; display: block; overflow-x: auto; }
+#viewer th, #viewer td { border: 1px solid var(--surface-4); padding: .7rem .9rem; text-align: left; }
+#viewer th { background: var(--surface-1); color: var(--brand-blue); font-weight: 600; }
+#viewer tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
+#viewer tbody tr:hover { background: rgba(255, 255, 255, .05); }
+
+#viewer ul { list-style: disc; padding-left: 1.6rem; margin: 1rem 0; }
+#viewer ol { list-style: decimal; padding-left: 1.6rem; margin: 1rem 0; }
+#viewer li { list-style: inherit; margin-bottom: .45rem; }
+#viewer img { max-width: 100%; height: auto; border-radius: .5rem; }
+#viewer blockquote { border-left: 3px solid var(--brand-pink); margin: 1rem 0; padding: .25rem 1rem; color: var(--text-muted); }
+
+.note-title {
+  color: var(--brand-pink) !important; font-size: 2.2rem;
+  border-bottom: 2px solid var(--surface-4) !important;
+  padding-bottom: .6rem; margin: 0 0 1.5rem !important; text-transform: capitalize;
+}
+
+/* Móvil: la barra lateral pasa arriba y ocupa todo el ancho */
+@media (max-width: 991.98px) {
+  #app { flex-direction: column; }
+  #sidebar { width: 100%; position: static; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--surface-4); }
+  #content { padding: 1.5rem 1rem; }
+}

@@ -6,14 +6,38 @@ Sitio personal en PHP (sin framework) con login y varias apps.
 
 | Carpeta | Contenido |
 |---|---|
-| `index.php`, `js/`, `styles/`, `img/` | Portada y recursos comunes |
-| `frontend/` | Cabecera (`head.php`), menú y pie reutilizables |
-| `backend/config/` | `ini.php` (arranque de páginas), `session.php`, `db.php` (conexión) |
-| `backend/functions/` | Funciones cargadas automáticamente por `ini.php` (`csrf.php`, `save_ip.php`) |
+| `index.php`, `img/` | Portada y logo/iconos |
+| `styles/` | `theme.css` (paleta y estilos comunes), `wiki.css`, `inventario.css` |
+| `js/vendor/` | Librerías locales (marked, DOMPurify) |
+| `frontend/` | Plantilla común: `head.php`, `menu.php` (navbar), `footer.php` |
+| `backend/config/` | `bootstrap.php` (sesión + rutas + login), `auth.php`, `session.php`, `ini.php` (cabecera HTML), `db.php` |
+| `backend/functions/` | Funciones cargadas automáticamente (`csrf.php`, `save_ip.php`) |
+| `backend/sessions/`, `backend/logs/` | Ficheros de sesión y logs (no accesibles por web) |
 | `backend/database/` | Esquema SQL y `migrations/` |
 | `backend/legacy/` | Código antiguo sin uso (no se carga) |
-| `apps/` | `wiki` (vault de Obsidian), `parking`, `giftlist`, `inventario` |
-| `src/` | `login`, cartas y documentos públicos |
+| `apps/` | `wiki` (+`wiki.js`), `parking` (+`parking.js`), `giftlist`, `inventario` (+`inventario.js`, `sw.js`) |
+| `src/` | `login` y páginas públicas (cartas, documentos) |
+
+### Cómo crear una página nueva
+
+```php
+<?php
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_login();                       // lleva al login y vuelve aquí al entrar
+$page_title = 'Mi página';             // opcional: $page_styles, $page_scripts
+?>
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<?php include __DIR__ . '/../../backend/config/ini.php'; ?>
+<body>
+  <?php include __DIR__ . '/../../frontend/menu.php'; ?>
+  <main class="page-container"> ... </main>
+  <?php include __DIR__ . '/../../frontend/footer.php'; ?>
+</body>
+</html>
+```
+
+Colores: se cambian en las variables de `:root` de `styles/theme.css`.
 
 ## Configuración local / servidor
 

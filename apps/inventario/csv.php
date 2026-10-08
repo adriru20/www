@@ -1,12 +1,6 @@
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
-$src = '../../';
-
-// Protección de sesión
-if (!isset($_SESSION['user_id'])) {
-    header("Location: {$src}src/login/");
-    exit();
-}
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_login();
 
 require $src . 'backend/config/db.php';
 require_once $src . 'backend/functions/csrf.php';
@@ -244,13 +238,17 @@ if (is_dir($backup_dir)) {
 }
 ?>
 
+<?php
+$page_title = 'Backups e importación';
+$page_styles = ['/styles/inventario.css'];
+?>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
 <?php include "{$src}backend/config/ini.php"; ?>
 <body>
   <?php include "{$src}frontend/menu.php"; ?>
 
-  <main class="containerB my-5">
+  <main class="page-container">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <a href="./" class="btn btn-outline-info">⬅️ Volver al Inventario</a>
@@ -365,5 +363,6 @@ if (is_dir($backup_dir)) {
       }
   </script>
 
+  <?php include "{$src}frontend/footer.php"; ?>
 </body>
 </html>

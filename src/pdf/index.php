@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menú de Documentos</title>
+    <title>Documentos · Adriru</title>
+    <link rel="shortcut icon" href="/img/favicon.ico" type="image/x-icon">
     <style>
         body {
             font-family: system-ui, -apple-system, sans-serif;
             padding: 20px;
             max-width: 600px;
             margin: 0 auto;
-            background-color: #f4f4f9;
+            background-color: #22252a;
         }
         h1 {
             text-align: center;
-            color: #2c3e50;
+            color: #e6e8ea;
             margin-bottom: 30px;
         }
         .menu-botones {
@@ -25,7 +26,7 @@
         .btn-doc {
             display: block;
             padding: 18px 20px;
-            background-color: #3498db;
+            background: linear-gradient(135deg, #ff3385, #4a90e2);
             color: white;
             text-decoration: none;
             text-align: center;
@@ -36,11 +37,11 @@
             transition: background-color 0.3s ease;
         }
         .btn-doc:hover {
-            background-color: #2980b9;
+            filter: brightness(1.1);
         }
         .mensaje-vacio {
             text-align: center;
-            color: #7f8c8d;
+            color: #95a5a6;
             font-style: italic;
         }
     </style>

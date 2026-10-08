@@ -6,3 +6,7 @@ backend/config/db.local.php
 accesos.log
 backend/logs/*.log
 apps/inventario/backup/*.zip
+
+# Sesiones de PHP (se crean en el servidor)
+backend/sessions/*
+!backend/sessions/.htaccess

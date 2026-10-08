@@ -1,24 +1,19 @@
 <?php
-require_once __DIR__ . '/../../backend/config/session.php';
+require_once __DIR__ . '/../../backend/config/bootstrap.php';
+require_once __DIR__ . '/../../backend/config/db.php';
+global $conn;
 
-// Definimos la ruta relativa para los includes y las redirecciones
-$src = '../../';
+// A dónde volver tras entrar (solo rutas internas)
+$next = safe_next($_POST['next'] ?? $_GET['next'] ?? '');
 
-// // MODO DEBUG
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
-
-// Redirigir si ya está logueado a la página principal
-if (isset($_SESSION['user_id'])) {
-  header("Location: {$src}");
+// Si ya hay sesión, directo a su destino
+if (is_logged_in()) {
+  header('Location: ' . $next);
   exit();
 }
 
-require_once $src . 'backend/config/db.php';
-global $conn;
-
 $error = '';
+$info  = ($_GET['msg'] ?? '') === 'logout' ? 'Has cerrado la sesión.' : '';
 
 // Límite de intentos fallidos por IP y usuario (5 en 15 minutos)
 $max_fails = 5;
@@ -29,24 +24,30 @@ function login_fails($file, $window) {
   $now = time();
   return array_values(array_filter(is_array($data) ? $data : [], fn($t) => is_int($t) && $t > $now - $window));
 }
+function login_fail_register($file, $window) {
+  $f = login_fails($file, $window);
+  $f[] = time();
+  @file_put_contents($file, json_encode($f), LOCK_EX);
+}
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $user = trim($_POST['user'] ?? '');
   $pass = $_POST['pass'] ?? '';
 
   if (count(login_fails($lock_file, $window)) >= $max_fails) {
-    $error = "Demasiados intentos fallidos. Espera unos minutos.";
-  } elseif (!empty($user) && !empty($pass)) {
-    // Preparamos la consulta
-    $stmt = $conn->prepare("SELECT id, user, pass, permission FROM login_user WHERE user = ?");
-    $stmt->bind_param("s", $user);
+    $error = 'Demasiados intentos fallidos. Espera unos minutos.';
+  } elseif ($user === '' || $pass === '') {
+    $error = 'Por favor, completa todos los campos.';
+  } else {
+    $stmt = $conn->prepare('SELECT id, user, pass, permission FROM login_user WHERE user = ?');
+    $stmt->bind_param('s', $user);
     $stmt->execute();
     $result = $stmt->get_result();
+    $row = $result->num_rows === 1 ? $result->fetch_assoc() : null;
+    $stmt->close();
 
-    if ($result->num_rows === 1) {
-      $row = $result->fetch_assoc();
-
-      // Validamos la contraseña
+    $ok = false;
+    if ($row) {
       $ok = password_verify($pass, $row['pass']);
       // Migración: cuentas antiguas con la contraseña sin hash. Se aceptan una última
       // vez (solo si el valor guardado no es un hash) y se guardan ya cifradas.
@@ -54,88 +55,67 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $ok = true;
         $row['pass'] = ''; // fuerza el rehash de abajo
       }
-      if ($ok) {
-        // Actualizar el hash si es antiguo o estaba en texto plano
-        if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
-          $new_hash = password_hash($pass, PASSWORD_DEFAULT);
-          $up = $conn->prepare("UPDATE login_user SET pass = ? WHERE id = ?");
-          $up->bind_param("ss", $new_hash, $row['id']);
-          $up->execute();
-          $up->close();
-        }
-        // Iniciar sesión (nuevo id para evitar session fixation)
-        @unlink($lock_file);
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $row['id'];
-        $_SESSION['username'] = $row['user'];
-        $_SESSION['permission'] = $row['permission'];
+    }
 
-        header("Location: {$src}");
-        exit();
-      } else {
-        $f = login_fails($lock_file, $window); $f[] = time();
-        @file_put_contents($lock_file, json_encode($f), LOCK_EX);
-        header("Location: logout.php");
-        exit();
+    if ($ok) {
+      if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
+        $new_hash = password_hash($pass, PASSWORD_DEFAULT);
+        $up = $conn->prepare('UPDATE login_user SET pass = ? WHERE id = ?');
+        $up->bind_param('ss', $new_hash, $row['id']);
+        $up->execute();
+        $up->close();
       }
-    } else {
-      $f = login_fails($lock_file, $window); $f[] = time();
-      @file_put_contents($lock_file, json_encode($f), LOCK_EX);
-      header("Location: logout.php");
+      @unlink($lock_file);
+      session_regenerate_id(true); // nuevo id para evitar session fixation
+      $_SESSION['user_id'] = $row['id'];
+      $_SESSION['username'] = $row['user'];
+      $_SESSION['permission'] = $row['permission'];
+      header('Location: ' . $next);
       exit();
     }
-    $stmt->close();
-  } else {
-    $error = "Por favor, completa todos los campos.";
+
+    login_fail_register($lock_file, $window);
+    $error = 'Usuario o contraseña incorrectos.';
   }
 }
+
+$page_title = 'Entrar';
 ?>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
-<?php require_once $src . 'backend/config/ini.php'; ?>
+<?php include __DIR__ . '/../../backend/config/ini.php'; ?>
 <body>
-  <?php include "{$src}frontend/menu.php"; ?>
+  <?php include __DIR__ . '/../../frontend/menu.php'; ?>
 
-  <main class="my-6">
-    <div class="container justify-content-center">
-      <div class="col-12 col-md-6 col-lg-4">
+  <main class="auth-wrap">
+    <div class="card shadow auth-card">
+      <img class="auth-logo" src="/img/Astronauta-flotador.png" alt="">
+      <h1>Iniciar sesión</h1>
 
-        <h1 class="text-center mb-4">Iniciar Sesión</h1>
+      <?php if ($error !== ''): ?>
+        <div class="alert alert-danger" role="alert"><?= htmlspecialchars($error) ?></div>
+      <?php elseif ($info !== ''): ?>
+        <div class="alert alert-info" role="status"><?= htmlspecialchars($info) ?></div>
+      <?php endif; ?>
 
-        <?php if ($error != ''): ?>
-          <div class="alert alert-danger" role="alert">
-            <?php echo htmlspecialchars($error); ?>
-          </div>
-        <?php endif; ?>
-
-        <div class="card shadow border-secondary">
-          <div class="card-body p-4">
-            <form action="index.php" method="POST">
-              <div class="mb-3">
-                <label for="user" class="form-label">Usuario</label>
-                <input type="text" name="user" id="user" class="form-control" required autofocus>
-              </div>
-
-              <div class="mb-4">
-                <label for="pass" class="form-label">Contraseña</label>
-                <input type="password" name="pass" id="pass" class="form-control" required>
-              </div>
-
-              <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary btn-lg">Entrar</button>
-              </div>
-            </form>
-          </div>
+      <form action="/src/login/" method="POST" autocomplete="on">
+        <input type="hidden" name="next" value="<?= htmlspecialchars($next) ?>">
+        <div class="mb-3">
+          <label for="user" class="form-label">Usuario</label>
+          <input type="text" name="user" id="user" class="form-control" required autofocus
+                 autocomplete="username" value="<?= htmlspecialchars($_POST['user'] ?? '') ?>">
         </div>
-
-        <div class="text-center mt-4">
-          <p>¿No tienes cuenta? <a href="signup.php" class="text-info text-decoration-none">Regístrate aquí</a></p>
+        <div class="mb-4">
+          <label for="pass" class="form-label">Contraseña</label>
+          <input type="password" name="pass" id="pass" class="form-control" required autocomplete="current-password">
         </div>
-
-      </div>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-accent btn-lg">Entrar</button>
+        </div>
+      </form>
     </div>
   </main>
-  <?php include "{$src}frontend/footer.php"; ?>
-</body>
 
+  <?php include __DIR__ . '/../../frontend/footer.php'; ?>
+</body>
 </html>
