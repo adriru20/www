@@ -1,7 +1,9 @@
 <?php
 // Protección CSRF para formularios (POST) y enlaces de acción (GET).
 // Requiere sesión iniciada.
-if (function_exists("csrf_token")) return; // evita redeclarar si se incluye dos veces
+// Las funciones van dentro de un if para poder incluir el fichero más de una vez
+// (ini.php incluye todo backend/functions/ y las apps también lo requieren).
+if (!function_exists('csrf_token')) {
 
 function csrf_token(): string {
   if (session_status() === PHP_SESSION_NONE) session_start();
@@ -38,4 +40,6 @@ function csrf_verify_post(): void {
 // Exige token válido en acciones lanzadas por GET (borrados)
 function csrf_verify_get(): void {
   if (!csrf_valid($_GET['csrf'] ?? null)) csrf_fail();
+}
+
 }
