@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 $src = '../../';
 
 // Protección de sesión
@@ -15,7 +15,8 @@ global $conn;
 // --- CONFIGURACIÓN DE CARPETA BACKUP ---
 $backup_dir = './backup/';
 if (!is_dir($backup_dir)) {
-    @mkdir($backup_dir, 0777, true);
+    @mkdir($backup_dir, 0750, true);
+    @file_put_contents($backup_dir . '.htaccess', "Require all denied\n");
 }
 
 // =========================================================================

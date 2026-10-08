@@ -1,5 +1,5 @@
 <?php
-session_start(); // Iniciar la sesión para poder destruirla
+require_once __DIR__ . '/../../backend/config/session.php';
 
 // Eliminar todas las variables de sesión
 $_SESSION = array();

@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/../../backend/config/session.php';
 $src = '../../';
 
 // Protección: Si no hay sesión, al login
@@ -23,6 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_item']) && $is_my_
   $item_name = trim($_POST['item_name']);
   $item_desc = trim($_POST['item_description']);
   $item_url = trim($_POST['item_url']);
+  // Solo enlaces http(s): evita esquemas como javascript: en el href
+  if ($item_url !== '' && !preg_match('#^https?://#i', $item_url)) {
+    $item_url = '';
+  }
 
   if (!empty($item_name)) {
     $stmt = $conn->prepare("INSERT INTO gift_items (user_id, item_name, item_description, item_url) VALUES (?, ?, ?, ?)");
@@ -62,7 +66,10 @@ $g_stmt->execute();
 $gifts = $g_stmt->get_result();
 
 // --- DATOS: Obtener otros usuarios para el selector ---
-$others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
+$o_stmt = $conn->prepare("SELECT id, user FROM login_user WHERE id != ?");
+$o_stmt->bind_param("s", $my_id);
+$o_stmt->execute();
+$others = $o_stmt->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -150,8 +157,8 @@ $others = $conn->query("SELECT id, user FROM login_user WHERE id != '$my_id'");
                       </td>
 
                       <td>
-                        <?php if (!empty($gift['item_url'])): ?>
-                          <a href="<?php echo htmlspecialchars($gift['item_url']); ?>" target="_blank" class="btn btn-sm btn-info text-white fw-semibold">Ver más</a>
+                        <?php if (!empty($gift['item_url']) && preg_match('#^https?://#i', $gift['item_url'])): ?>
+                          <a href="<?php echo htmlspecialchars($gift['item_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-info text-white fw-semibold">Ver más</a>
                         <?php else: ?>
                           <span class="text-muted small">-</span>
                         <?php endif; ?>

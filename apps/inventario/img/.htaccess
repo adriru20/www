@@ -2,5 +2,3 @@
 <FilesMatch "(?i)\.(php[0-9]?|phtml|phar|pl|py|cgi|sh)$">
   Require all denied
 </FilesMatch>
-RemoveHandler .php .phtml .phar
-Options -ExecCGI -Indexes

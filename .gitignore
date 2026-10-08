@@ -4,4 +4,5 @@ backend/config/db.local.php
 
 # Datos generados en el servidor
 accesos.log
-apps/inventario/backup/
+backend/logs/*.log
+apps/inventario/backup/*.zip
