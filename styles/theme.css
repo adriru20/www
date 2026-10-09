@@ -222,3 +222,27 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
 /* ---------- Parking ---------- */
 .parking-actions { display: grid; gap: .75rem; max-width: 420px; }
 @media (min-width: 576px) { .parking-actions { grid-template-columns: repeat(3, 1fr); max-width: none; } }
+
+/* ---------- Gift list ---------- */
+.people-nav { display: flex; gap: .5rem; overflow-x: auto; padding-bottom: .25rem; scrollbar-width: thin; }
+.people-pill {
+  display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap;
+  padding: .45rem .9rem; border-radius: 999px; font-weight: 600; font-size: .92rem;
+  color: var(--text-muted); background: var(--surface-3); border: 1px solid var(--surface-4);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.people-pill:hover { color: #fff; border-color: var(--brand-pink); }
+.people-pill.active { color: #fff; background: linear-gradient(135deg, var(--brand-pink), var(--brand-blue)); border-color: transparent; }
+.people-pill .badge { background: rgba(255, 255, 255, .18); font-weight: 600; }
+.gift-card { transition: border-color .15s, transform .15s; }
+.gift-card:hover { border-color: var(--brand-pink); }
+.gift-card h3 { word-break: break-word; }
+.gift-desc { color: var(--text-muted); font-size: .92rem; word-break: break-word; }
+
+/* ---------- Comunes a varias apps ---------- */
+.count-pill {
+  font-size: .85rem; font-weight: 600; vertical-align: middle;
+  padding: .15rem .6rem; border-radius: 999px; margin-left: .4rem;
+  background: rgba(255, 51, 133, .15); color: var(--brand-pink);
+}
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }

@@ -13,3 +13,7 @@ backend/sessions/*
 
 # Miniaturas generadas del inventario
 apps/inventario/img/_thumbs/
+
+# Fotos privadas del parking
+apps/parking/uploads/*
+!apps/parking/uploads/.htaccess
