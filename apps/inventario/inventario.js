@@ -5,6 +5,13 @@
   const $ = (id) => document.getElementById(id);
   const modal = (id) => bootstrap.Modal.getOrCreateInstance($(id));
   const DATA = JSON.parse(($('inv-data') || {}).textContent || '{"obj":{},"loc":{}}');
+  const PERM = DATA.perm || { add: true, edit: true, delete: true, backup: true };
+
+  // Sin permiso de edición, el formulario solo sirve para ver los datos
+  function setReadOnly(form, ro) {
+    form.querySelectorAll('input:not([type=hidden]), select, textarea, [data-pick], [data-autoname]').forEach((el) => { el.disabled = ro; });
+    form.querySelectorAll('[type=submit]').forEach((b) => b.classList.toggle('d-none', ro));
+  }
 
   // ---------- Utilidades ----------
   const imgUrl = (v) => {
@@ -78,7 +85,10 @@
     $('o_loc').value = o.localizacion || '';
     $('o_plat').value = o.plataformas || '';
     $('o_desc').value = o.descripcion || '';
-    $('o_delete').classList.toggle('d-none', isNew);
+    const ro = !isNew && !PERM.edit;
+    setReadOnly($('formObj'), ro);
+    if (ro) $('modalObjTitle').textContent = o.objeto || 'Detalle';
+    $('o_delete').classList.toggle('d-none', isNew || !PERM.delete);
     if (!isNew) { const b = $('o_delete'); b.dataset.id = o.id; b.dataset.label = '«' + (o.objeto || 'este objeto') + '»'; b.dataset.warn = ''; }
     ['o_gen', 'o_loc', 'o_plat'].forEach(refreshTags);
     toggleConditionals();
@@ -99,7 +109,10 @@
     $('l_file_cam').value = ''; $('l_file_folder').value = '';
     $('l_desc').value = l.descripcion_del_contenido || '';
     $('l_uses').textContent = isNew ? '' : (l.usos ? l.usos + ' objeto(s) están en esta localización.' : 'Ningún objeto está en esta localización.');
-    $('l_delete').classList.toggle('d-none', isNew);
+    const ro = !isNew && !PERM.edit;
+    setReadOnly($('formLoc'), ro);
+    if (ro) $('modalLocTitle').textContent = l.nombre || 'Detalle';
+    $('l_delete').classList.toggle('d-none', isNew || !PERM.delete);
     if (!isNew) { const b = $('l_delete'); b.dataset.id = l.id; b.dataset.label = '«' + l.nombre + '»'; b.dataset.warn = l.usos ? l.usos + ' objeto(s) seguirán apuntando a este nombre.' : ''; }
     modal('modalLoc').show();
   }

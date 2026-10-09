@@ -46,6 +46,16 @@ La conexión a la base de datos NO está en Git. Copia `backend/config/db.local.
 a `backend/config/db.local.php` y rellénalo (o define `DB_HOST`, `DB_USER`, `DB_PASS`, `DB_NAME`).
 Para VS Code SFTP copia `.vscode/sftp.example.json` a `.vscode/sftp.json`.
 
+## Usuarios, roles y permisos
+
+- Roles: **Administrador** (todo + gestiona usuarios), **Usuario** y **Visitante**. Se gestionan en `/src/admin/` (solo admin).
+- Cada persona tiene una checklist de secciones (Wiki, Parking, Gift list, Inventario) y, dentro del inventario,
+  subpermisos: añadir, editar, borrar y backups. Por defecto un usuario nuevo no ve ninguna sección.
+- El registro de secciones y permisos está en `backend/config/apps.php` (menú, inicio y panel se generan de ahí).
+- En el código: `require_app('wiki')` en la página, `require_app_api('wiki')` en las APIs y `has_perm('inventario.edit')` para acciones.
+- Tablas: `login_user` (rol, activo, último acceso) y `user_permissions` (qué puede hacer cada usuario).
+- Antes de ejecutar `backend/database/migraciones/002_roles_y_mejoras.sql` todo funciona como antes (modo compatible).
+
 ## Despliegue
 
 Un push a `main` ejecuta `.github/workflows/deploy.yml`: comprueba la sintaxis PHP y sube por SFTP.

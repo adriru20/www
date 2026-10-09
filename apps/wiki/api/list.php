@@ -1,12 +1,8 @@
 <?php
 // api/list.php
-require_once __DIR__ . '/../../../backend/config/session.php';
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    header('Content-Type: application/json');
-    exit(json_encode(['error' => 'No autorizado']));
-}
+require_once __DIR__ . '/../../../backend/config/bootstrap.php';
 header('Content-Type: application/json');
+require_app_api('wiki');
 
 function buildTree($baseDir, $currentRelDir = '') {
     $result = [];

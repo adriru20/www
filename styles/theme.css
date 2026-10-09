@@ -246,3 +246,19 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
   background: rgba(255, 51, 133, .15); color: var(--brand-pink);
 }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+
+/* ---------- Administración de usuarios ---------- */
+.user-card.is-off { opacity: .6; }
+.d-contents { display: contents; }
+.perm-list { border: 1px solid var(--surface-4); border-radius: .6rem; padding: .75rem .9rem; background: var(--surface-1); }
+.perm-app + .perm-app { margin-top: .6rem; padding-top: .6rem; border-top: 1px solid var(--surface-4); }
+.perm-subs { margin: .4rem 0 0 1.6rem; display: grid; gap: .25rem; }
+
+/* Etiquetas redondeadas (parking, usuarios) */
+.spot-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.chip { font-size: .8rem; padding: .2rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .07); border: 1px solid var(--surface-4); }
+.chip.chip-warn { color: #ffd479; border-color: rgba(255, 193, 7, .5); }
+.chip.chip-bad { color: #ff8a95; border-color: rgba(220, 53, 69, .6); }
+.chip.chip-ok { color: #7ee2a8; }
+.spot-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .85rem; }
+.spot-actions .btn { flex: 1 1 auto; }

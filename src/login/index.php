@@ -14,6 +14,7 @@ if (is_logged_in()) {
 
 $error = '';
 $info  = ($_GET['msg'] ?? '') === 'logout' ? 'Has cerrado la sesión.' : '';
+if (($_GET['msg'] ?? '') === 'disabled') $error = 'Tu cuenta está desactivada. Habla con el administrador.';
 
 // Límite de intentos fallidos por IP y usuario (5 en 15 minutos)
 $max_fails = 5;
@@ -39,12 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif ($user === '' || $pass === '') {
     $error = 'Por favor, completa todos los campos.';
   } else {
-    $stmt = $conn->prepare('SELECT id, user, pass, permission FROM login_user WHERE user = ?');
-    $stmt->bind_param('s', $user);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->num_rows === 1 ? $result->fetch_assoc() : null;
-    $stmt->close();
+    // Con el SQL de roles ejecutado existe la columna "active"; sin él se usa la consulta anterior
+    $result = db_query('SELECT id, user, pass, permission, active FROM login_user WHERE user = ?', 's', [$user])
+           ?: db_query('SELECT id, user, pass, permission FROM login_user WHERE user = ?', 's', [$user]);
+    $row = ($result && $result->num_rows === 1) ? $result->fetch_assoc() : null;
 
     $ok = false;
     if ($row) {
@@ -57,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
 
+    if ($ok && isset($row['active']) && (int) $row['active'] !== 1) {
+      $ok = false;
+      $error = 'Tu cuenta está desactivada. Habla con el administrador.';
+    }
+
     if ($ok) {
       if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
         $new_hash = password_hash($pass, PASSWORD_DEFAULT);
@@ -66,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $up->close();
       }
       @unlink($lock_file);
+      db_exec('UPDATE login_user SET last_login = ? WHERE id = ?', 'ss', [date('Y-m-d H:i:s'), $row['id']]); // si la columna aún no existe, no pasa nada
       session_regenerate_id(true); // nuevo id para evitar session fixation
       $_SESSION['user_id'] = $row['id'];
       $_SESSION['username'] = $row['user'];
@@ -75,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     login_fail_register($lock_file, $window);
-    $error = 'Usuario o contraseña incorrectos.';
+    if ($error === '') $error = 'Usuario o contraseña incorrectos.';
   }
 }
 

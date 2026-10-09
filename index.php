@@ -16,24 +16,25 @@ $page_title = 'Inicio';
       <p>¿A dónde vamos hoy?</p>
     </section>
 
+    <?php $apps = allowed_apps(); ?>
+    <?php if ($apps): ?>
     <section class="app-grid" aria-label="Aplicaciones">
-      <a class="app-card" href="/apps/wiki/">
-        <span class="app-icon"><i class="fa-solid fa-book-open"></i></span>
-        <h2>Wiki</h2><p>Mis notas y apuntes de Obsidian.</p>
-      </a>
-      <a class="app-card" href="/apps/parking/">
-        <span class="app-icon"><i class="fa-solid fa-car"></i></span>
-        <h2>Parking</h2><p>Guarda dónde has aparcado el coche.</p>
-      </a>
-      <a class="app-card" href="/apps/giftlist/">
-        <span class="app-icon"><i class="fa-solid fa-gift"></i></span>
-        <h2>Gift list</h2><p>Listas de regalos de la familia.</p>
-      </a>
-      <a class="app-card" href="/apps/inventario/">
-        <span class="app-icon"><i class="fa-solid fa-boxes-stacked"></i></span>
-        <h2>Inventario</h2><p>Objetos, juegos y dónde está cada cosa.</p>
-      </a>
+      <?php foreach ($apps as $app): ?>
+        <a class="app-card" href="<?= $app['href'] ?>">
+          <span class="app-icon"><i class="fa-solid <?= $app['icon'] ?>"></i></span>
+          <h2><?= htmlspecialchars($app['label']) ?></h2><p><?= htmlspecialchars($app['desc']) ?></p>
+        </a>
+      <?php endforeach; ?>
+      <?php if (is_admin()): ?>
+        <a class="app-card" href="/src/admin/">
+          <span class="app-icon"><i class="fa-solid fa-users-gear"></i></span>
+          <h2>Usuarios</h2><p>Roles y secciones de cada persona.</p>
+        </a>
+      <?php endif; ?>
     </section>
+    <?php else: ?>
+    <div class="empty-state"><p>Todavía no tienes acceso a ninguna sección.<br>Pídeselo al administrador.</p></div>
+    <?php endif; ?>
   </main>
   <?php include __DIR__ . '/frontend/footer.php'; ?>
 </body>

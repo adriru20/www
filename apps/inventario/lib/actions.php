@@ -13,17 +13,32 @@ function inv_handle_actions(): void {
   $return = (string) ($_POST['return'] ?? '');
   $id = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
 
-  switch ($_POST['action'] ?? '') {
+  // Subpermisos del inventario: qué permiso exige cada acción
+  $action = (string) ($_POST['action'] ?? '');
+  $needs = match ($action) {
+    'save_obj', 'save_loc' => $id ? 'inventario.edit' : 'inventario.add',
+    'upload_img'           => 'inventario.add',
+    'rename_img'           => 'inventario.edit',
+    'delete_obj', 'delete_loc', 'delete_img' => 'inventario.delete',
+    default                => null,
+  };
+  if ($needs !== null && !has_perm($needs)) {
+    inv_flash('No tienes permiso para hacer eso en el inventario.', 'danger');
+    inv_redirect($return);
+  }
+
+  switch ($action) {
 
     case 'save_obj':
       $err = null;
       $up = inv_upload_dual($_FILES['portada_file_cam'] ?? [], $_FILES['portada_file_folder'] ?? [], trim((string) ($_POST['portada_custom_name'] ?? '')), $err);
       if ($err) inv_flash($err, 'warning');
       $portada = $up ?? inv_portada_value((string) ($_POST['portada_http'] ?? ''));
-      [$ok, $res] = inv_obj_save($_POST, $portada, $id);
+      [$ok, $res, $newLocs] = array_pad(inv_obj_save($_POST, $portada, $id), 3, 0);
       if (!$ok) { inv_flash($res, 'danger'); break; }
       $titulo = trim((string) $_POST['titulo']);
       inv_flash('Objeto «' . $titulo . '» ' . ($id ? 'actualizado' : 'añadido') . '.');
+      if ($newLocs > 0) inv_flash($newLocs . ' localización(es) nueva(s) creada(s) con los nombres que escribiste.', 'info');
       if (inv_title_exists($titulo, (int) $res)) inv_flash('Ya tenías otro objeto llamado «' . $titulo . '». Revisa que no esté duplicado.', 'warning');
       break;
 

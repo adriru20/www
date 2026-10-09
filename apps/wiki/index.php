@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../backend/config/bootstrap.php';
-require_login();
+require_app('wiki');
 $page_title = 'Wiki';
 $page_styles = ['/styles/wiki.css'];
 $page_scripts = ['/js/vendor/marked.min.js', '/js/vendor/purify.min.js', '/apps/wiki/wiki.js'];

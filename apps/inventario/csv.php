@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/../../backend/config/bootstrap.php';
-require_login();
+require_app('inventario');
+if (!has_perm('inventario.backup')) deny_page('los backups del inventario');
 
-require $src . 'backend/config/db.php';
+require_once $src . 'backend/config/db.php';
 require_once $src . 'backend/functions/csrf.php';
 global $conn;
 
@@ -11,6 +12,7 @@ foreach (['config', 'helpers', 'repository', 'backup'] as $lib) {
 }
 
 // Carpeta de backups (protegida: se descarga solo con sesión, desde aquí)
+if (!inv_schema_ready()) inv_migration_page();
 $backup_dir = inv_backup_dir();
 
 // Descarga de un backup: csv.php?download=NOMBRE.zip
@@ -120,45 +122,42 @@ if (isset($_POST['import_obj']) && isset($_FILES['file_obj'])) {
     if (($handle = fopen($file_tmp, "r")) !== FALSE) {
         fgetcsv($handle);
         $contador = 0;
-        $conn->query("SET FOREIGN_KEY_CHECKS = 0;");
+        $fallos = 0;
 
         while (($data = fgetcsv($handle, 10000, ",")) !== FALSE) {
             $nombre_final = trim($data[1] ?? '');
-            if (empty($nombre_final)) $nombre_final = trim($data[2] ?? '');
-            if (empty($nombre_final)) $nombre_final = trim($data[3] ?? '');
+            if ($nombre_final === '') $nombre_final = trim($data[2] ?? '');
+            if ($nombre_final === '') $nombre_final = trim($data[3] ?? '');
+            if ($nombre_final === '') continue;
 
-            if (empty($nombre_final)) continue;
-
+            // Valores limpios según el tipo de cada columna
             $portada = basename(trim($data[0] ?? ''));
-            $loc     = (isset($data[4]) && trim($data[4]) !== '') ? trim($data[4]) : null;
+            $locs    = inv_split_list($data[4] ?? '');
             $desc    = trim($data[5] ?? '');
             $tipo    = trim($data[6] ?? '');
             $t_obj   = trim($data[7] ?? '');
-            $cant    = is_numeric($data[8] ?? '') ? (int)$data[8] : 1;
+            $cant    = max(1, (int) ($data[8] ?? 1));
             $gen     = trim($data[9] ?? '');
             $plat    = trim($data[10] ?? '');
-            $anio    = trim($data[11] ?? '');
+            $anio    = preg_match('/^\d{4}$/', trim($data[11] ?? '')) ? (int) $data[11] : null;
             $form    = trim($data[12] ?? '');
-            $precio  = trim($data[13] ?? '');
-            $dur     = trim($data[14] ?? '');
+            $precio  = max(0, (float) str_replace(',', '.', trim($data[13] ?? '0')));
+            $dur     = preg_match('/^\d+$/', trim($data[14] ?? '')) ? (int) $data[14] : null;
             $f_arc   = trim($data[15] ?? '');
-            $caja    = trim($data[16] ?? '');
+            $caja    = in_array(mb_strtolower(trim($data[16] ?? '')), ['1', 'si', 'sí', 'true', 'yes', 'on'], true) ? 1 : 0;
 
-            try {
-                $stmt = $conn->prepare("INSERT INTO inv_objetos (objeto, localizacion, descripcion, tipo, tipo_de_objeto, cantidad, generos, plataformas, anio_de_estreno, formato, precio_de_venta, duracion, formato_de_archivo, en_la_caja, portada_http) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-
-                $stmt->bind_param("sssssssisssssss",
-                    $nombre_final, $loc, $desc, $tipo, $t_obj, $cant,
-                    $gen, $plat, $anio, $form, $precio, $dur, $f_arc, $caja, $portada
-                );
-
-                if ($stmt->execute()) $contador++;
-            } catch (Exception $e) {}
+            $r = inv_exec('INSERT INTO inv_objetos (objeto, descripcion, tipo, tipo_de_objeto, cantidad, generos, plataformas, anio_de_estreno, formato, precio_de_venta, duracion, formato_de_archivo, en_la_caja, portada_http) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'ssssissisdisis', [$nombre_final, $desc, $tipo, $t_obj, $cant, $gen, $plat, $anio, $form, $precio, $dur, $f_arc, $caja, $portada]);
+            if ($r['ok']) {
+                inv_obj_set_locations($r['insert_id'], $locs);
+                $contador++;
+            } else {
+                $fallos++;
+            }
         }
-        $conn->query("SET FOREIGN_KEY_CHECKS = 1;");
         fclose($handle);
-        $mensaje .= ($mensaje ? "<br>" : "") . "✅ Objetos: $contador importados correctamente.";
-        $tipo_mensaje = "success";
+        $mensaje .= ($mensaje ? "<br>" : "") . "✅ Objetos: $contador importados correctamente." . ($fallos ? " ⚠️ $fallos fila(s) no se pudieron importar." : '');
+        $tipo_mensaje = $fallos ? "warning" : "success";
     }
 }
 
