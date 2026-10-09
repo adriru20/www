@@ -84,14 +84,38 @@ function inv_rename_image(string $old, string $newBase): ?string {
 }
 
 // Cuántos objetos/localizaciones usan cada imagen: ['foto.jpg' => 2, ...]
-function inv_image_usage(): array {
+// Devuelve null si falla la base de datos (así nunca se confunde "no se pudo comprobar" con "sin usar").
+function inv_image_usage(): ?array {
   $use = [];
   foreach (['SELECT portada_http AS f FROM inv_objetos', 'SELECT foto_http AS f FROM inv_localizaciones'] as $sql) {
     $r = inv_query($sql);
-    while ($r && ($row = $r->fetch_assoc())) {
+    if (!$r) return null;
+    while ($row = $r->fetch_assoc()) {
       $f = trim((string) $row['f']);
       if ($f !== '' && stripos($f, 'http') !== 0) { $f = basename($f); $use[$f] = ($use[$f] ?? 0) + 1; }
     }
   }
   return $use;
+}
+
+// Imágenes de img/ que ningún objeto ni localización usa (sin distinguir mayúsculas, por seguridad).
+// null si no se pudo comprobar el uso.
+function inv_unused_images(?array $images = null, ?array $usage = null): ?array {
+  $usage ??= inv_image_usage();
+  if ($usage === null) return null;
+  $used = array_change_key_case($usage, CASE_LOWER);
+  return array_values(array_filter($images ?? inv_list_images(), fn($n) => !isset($used[strtolower($n)])));
+}
+
+// Espacio que ocupan estas imágenes (bytes)
+function inv_images_size(array $names): int {
+  $sum = 0;
+  foreach ($names as $n) $sum += (int) @filesize(INV_IMG_DIR . basename($n));
+  return $sum;
+}
+
+function inv_format_bytes(int $b): string {
+  if ($b >= 1048576) return number_format($b / 1048576, 1, ',', '.') . ' MB';
+  if ($b >= 1024) return number_format($b / 1024, 0, ',', '.') . ' KB';
+  return $b . ' B';
 }

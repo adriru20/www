@@ -127,7 +127,7 @@ function inv_location_id(string $nombre, bool $create = true): ?int {
 
 // Sustituye las localizaciones de un objeto por la lista de nombres dada. Devuelve cuántas se han creado nuevas.
 function inv_obj_set_locations(int $objId, array $names): int {
-  $before = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0);
+  $before = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')?->fetch_assoc()['n'] ?? 0);
   inv_exec('DELETE FROM inv_objeto_localizacion WHERE objeto_id = ?', 'i', [$objId]);
   $done = [];
   foreach ($names as $n) {
@@ -135,7 +135,7 @@ function inv_obj_set_locations(int $objId, array $names): int {
     if ($lid && !isset($done[$lid])) { $done[$lid] = true; inv_exec('INSERT INTO inv_objeto_localizacion (objeto_id, localizacion_id) VALUES (?, ?)', 'ii', [$objId, $lid]); }
   }
   inv_sync_location_text([$objId]);
-  return (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0) - $before;
+  return (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')?->fetch_assoc()['n'] ?? 0) - $before;
 }
 
 // Copia de seguridad de la relación en el texto antiguo (columna inv_objetos.localizacion):
@@ -313,7 +313,7 @@ function inv_stats(): array {
     if ($p > 0) { $s['venta_n']++; $s['venta_total'] += $p * $q; }
   }
   arsort($s['por_tipo']); arsort($s['por_cat']); arsort($s['por_loc']);
-  $s['localizaciones'] = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0);
+  $s['localizaciones'] = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')?->fetch_assoc()['n'] ?? 0);
   return $s;
 }
 
