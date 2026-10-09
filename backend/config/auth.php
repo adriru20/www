@@ -21,6 +21,41 @@ function login_url(?string $next = null): string {
   return '/src/login/' . ($next !== '/' ? '?next=' . urlencode($next) : '');
 }
 
+// ---------------------------------------------------------------- Sesión ligada a la contraseña
+// Al iniciar sesión se guarda en la sesión una «huella» de la contraseña vigente ($_SESSION['pv']).
+// Si la contraseña cambia (la persona o el administrador), las huellas de las demás sesiones dejan de
+// coincidir y esas sesiones se cierran solas en la siguiente visita. No hace falta tocar la base de datos.
+function pass_stamp(string $passHash): string {
+  return substr(hash('sha256', 'pv1|' . $passHash), 0, 24);
+}
+
+function session_pass_ok(): bool {
+  static $ok = null;
+  if ($ok !== null) return $ok;
+  if (!is_logged_in()) return $ok = true;
+  global $conn;
+  if (!isset($conn)) require_once __DIR__ . '/db.php';
+  $r = db_query('SELECT pass FROM login_user WHERE id = ?', 's', [(string) $_SESSION['user_id']]);
+  if ($r === false) return $ok = true;                    // no se puede comprobar: no se expulsa a nadie
+  $row = $r->fetch_assoc();
+  if (!$row) return $ok = false;                          // la cuenta ya no existe
+  $stamp = pass_stamp((string) $row['pass']);
+  if (empty($_SESSION['pv'])) { $_SESSION['pv'] = $stamp; return $ok = true; }   // sesión anterior a esta función: se adopta
+  return $ok = hash_equals((string) $_SESSION['pv'], $stamp);
+}
+
+// Cierra la sesión actual y lleva al login con un aviso
+function session_expire(string $msg = 'expired'): void {
+  $_SESSION = [];
+  if (ini_get('session.use_cookies')) {
+    $c = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $c['path'], $c['domain'], $c['secure'], $c['httponly']);
+  }
+  session_destroy();
+  header('Location: /src/login/?msg=' . $msg);
+  exit();
+}
+
 // ---------------------------------------------------------------- Estado de permisos
 
 // Carga (una vez por petición) el rol, si la cuenta está activa y sus permisos desde la BD.
@@ -76,12 +111,10 @@ function require_login(): void {
     header('Location: ' . login_url($_SERVER['REQUEST_URI'] ?? '/'));
     exit();
   }
+  if (!session_pass_ok()) session_expire('expired');  // la contraseña cambió desde otro sitio
   $st = acl_state();
   if ($st['ready'] && !$st['active']) {               // cuenta desactivada por el administrador
-    $_SESSION = [];
-    session_destroy();
-    header('Location: /src/login/?msg=disabled');
-    exit();
+    session_expire('disabled');
   }
 }
 
@@ -126,6 +159,7 @@ function require_admin(): void {
 // Variante para APIs: responde con JSON/texto y código HTTP en vez de una página
 function require_app_api(string $app): void {
   if (!is_logged_in()) { http_response_code(401); exit(json_encode(['ok' => false, 'error' => 'no_session'])); }
+  if (!session_pass_ok()) { http_response_code(401); exit(json_encode(['ok' => false, 'error' => 'session_expired'])); }
   $st = acl_state();
   if ($st['ready'] && !$st['active']) { http_response_code(401); exit(json_encode(['ok' => false, 'error' => 'disabled'])); }
   if (!can_access_app($app)) { http_response_code(403); exit(json_encode(['ok' => false, 'error' => 'forbidden'])); }

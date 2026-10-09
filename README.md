@@ -59,6 +59,8 @@ Para VS Code SFTP copia `.vscode/sftp.example.json` a `.vscode/sftp.json`.
 
 Cada usuario puede cambiar su contraseña en **Mi cuenta** (`/src/cuenta/`, menú superior): pide la actual, limita los intentos fallidos y
 usa el ojito (`js/password-eye.js`, atributo `data-eye`) para ver lo que se escribe. El login también lo lleva.
+Al cambiar una contraseña (la persona o el administrador) se cierran las sesiones abiertas en otros dispositivos: cada sesión guarda una huella de la
+contraseña (`$_SESSION['pv']`, ver `pass_stamp()` en `backend/config/auth.php`) y deja de valer si no coincide con la actual.
 
 ## Despliegue
 
