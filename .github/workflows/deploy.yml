@@ -51,6 +51,8 @@ jobs:
         run: |
           printf 'commit: %s\ndesplegado: %s\n' "$GITHUB_SHA" "$(date -u +'%Y-%m-%d %H:%M:%S UTC')" > version.txt
 
+      # La contraseña se escapa y va en un fichero de órdenes (lftp -f) en vez de en la línea
+      # de comandos: así admite cualquier carácter (" \\ $ # %) y no sale nunca en el log.
       - name: Sincronizar vía SFTP
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -59,43 +61,23 @@ jobs:
         run: |
           # No se usa --delete a propósito: en el servidor viven ficheros que no están en Git
           # (db.local.php, imágenes subidas, backups, logs).
-          if [ "$SFTP_STRICT" = "no" ]; then
-            AUTOCONFIRM="set sftp:auto-confirm yes"
-          else
-            AUTOCONFIRM="set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes\""
-          fi
-          lftp -c "
-          $AUTOCONFIRM
-          open sftp://$FTP_HOST
-          user $FTP_USER \"$FTP_PASS\"
-          mirror -R -v \
-            --exclude .git/ --exclude .github/ --exclude .vscode/ \
-            --exclude apps/wiki/vault/.obsidian/ \
-            --exclude backend/logs/ --exclude apps/inventario/backup/ \
-            --exclude README.md --exclude .gitignore \
-            ./ /homepages/28/d1007113302/htdocs/www/
-          bye
-          "
-
-      # Diagnóstico: enseña en el log dónde ha escrito realmente la subida
-      - name: Verificar destino
-        env:
-          FTP_USER: ${{ secrets.FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
-          FTP_HOST: ${{ secrets.FTP_SERVER }}
-        run: |
-          if [ "$SFTP_STRICT" = "no" ]; then
-            AUTOCONFIRM="set sftp:auto-confirm yes"
-          else
-            AUTOCONFIRM="set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes\""
-          fi
-          lftp -c "
-          $AUTOCONFIRM
-          open sftp://$FTP_HOST
-          user $FTP_USER \"$FTP_PASS\"
-          cls -l /homepages/28/d1007113302/htdocs/www/
-          cls -l /
-          cls -l /homepages/28/d1007113302/htdocs/www/version.txt
-          cls -l /homepages/28/d1007113302/htdocs/www/apps/giftlist/lib.php
-          bye
-          " || true
+          ESC_USER=$(printf '%s' "$FTP_USER" | sed 's/[\\"]/\\&/g')
+          ESC_PASS=$(printf '%s' "$FTP_PASS" | sed 's/[\\"]/\\&/g')
+          {
+            if [ "$SFTP_STRICT" = "no" ]; then
+              echo "set sftp:auto-confirm yes"
+            else
+              echo 'set sftp:connect-program "ssh -a -x -o StrictHostKeyChecking=yes"'
+            fi
+            echo "open sftp://$FTP_HOST"
+            echo "user \"$ESC_USER\" \"$ESC_PASS\""
+            echo "mirror -R -v --exclude .git/ --exclude .github/ --exclude .vscode/ --exclude apps/wiki/vault/.obsidian/ --exclude backend/logs/ --exclude apps/inventario/backup/ --exclude README.md --exclude .gitignore ./ /homepages/28/d1007113302/htdocs/www/"
+            echo "cls -l /homepages/28/d1007113302/htdocs/www/version.txt"
+            echo "cls -l /homepages/28/d1007113302/htdocs/www/apps/giftlist/lib.php"
+            echo "cls -l /homepages/28/d1007113302/htdocs/www/"
+            echo "cls -l /"
+            echo "bye"
+          } > "$RUNNER_TEMP/lftp.cmd"
+          chmod 600 "$RUNNER_TEMP/lftp.cmd"
+          lftp -f "$RUNNER_TEMP/lftp.cmd"
+          rm -f "$RUNNER_TEMP/lftp.cmd"
