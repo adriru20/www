@@ -118,7 +118,7 @@ function gift_handle_actions(string $myId): void {
                                              WHERE g.id = ?', 'i', [$id]) : false;
       $g = $g ? $g->fetch_assoc() : null;
       if (!$g) { flash_add('Ese regalo ya no existe o la función aún no está activada.', 'warning'); break; }
-      $redirect = 'index.php?view=' . urlencode($g['user_id']);
+      $redirect = 'index.php?view=' . urlencode($g['user_id']) . (($_POST['estado'] ?? '') === 'comprados' ? '&estado=comprados' : '');   // vuelve a la pestaña en que estaba
 
       if ($_POST['action'] === 'mark_bought') {
         if ($g['user_id'] === $myId) { flash_add('No puedes marcar tus propios regalos: ¡tiene que ser sorpresa!', 'warning'); $redirect = 'index.php'; break; }

@@ -5,10 +5,11 @@
   const DATA = JSON.parse(($('gift-data') || {}).textContent || '{}');
   const OWNER = ($('modalDeleteGift') || { dataset: {} }).dataset.ownerName || '';   // vacío en mi propia lista
 
-  // Buscador instantáneo + filtro por estado (Todos / Pendientes / Comprados)
+  // Buscador instantáneo + pestañas por estado (Pendientes / Comprados; en mi propia lista no hay pestañas)
   const search = $('giftSearch');
   const cols = [...document.querySelectorAll('.gift-col')];
-  let state = 'all';
+  const active = document.querySelector('[data-gift-filter].active');
+  let state = active ? active.dataset.giftFilter : 'all';
   const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   function applyFilters() {
     const q = search ? norm(search.value.trim()) : '';
@@ -18,8 +19,15 @@
       c.classList.toggle('d-none', !ok);
       if (ok) shown++;
     });
-    if ($('giftNoResults')) $('giftNoResults').classList.toggle('d-none', shown > 0);
-    if ($('giftCount')) $('giftCount').textContent = (q || state !== 'all') ? shown + ' de ' + cols.length : cols.length;
+    const inState = cols.filter((c) => state === 'all' || c.dataset.state === state).length;
+    const nr = $('giftNoResults');
+    if (nr) {
+      nr.classList.toggle('d-none', shown > 0);
+      nr.textContent = q ? 'Ningún regalo coincide con la búsqueda.' : (state === 'bought' ? 'Todavía no hay regalos comprados.' : state === 'pending' ? 'No hay regalos pendientes.' : 'Ningún regalo coincide con la búsqueda.');
+    }
+    if ($('giftCount')) $('giftCount').textContent = q ? shown + ' de ' + inState : inState;
+    // Al marcar/desmarcar se vuelve a la misma pestaña
+    document.querySelectorAll('[data-gift-estado]').forEach((i) => { i.value = state === 'bought' ? 'comprados' : 'pendientes'; });
   }
   if (search) search.addEventListener('input', applyFilters);
   document.querySelectorAll('[data-gift-filter]').forEach((b) => b.addEventListener('click', () => {
@@ -27,6 +35,7 @@
     document.querySelectorAll('[data-gift-filter]').forEach((x) => x.classList.toggle('active', x === b));
     applyFilters();
   }));
+  applyFilters();
 
   // Editar / borrar (delegación)
   document.addEventListener('click', (e) => {

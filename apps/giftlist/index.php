@@ -22,6 +22,7 @@ $people = gift_people($my_id);
 $can_write = $is_mine || gift_can_manage();            // añadir/editar/borrar en esta lista
 $show_buy = !$is_mine && gift_purchase_ready();       // botones de "comprado" (solo en listas ajenas)
 $gifts    = gift_list($view_id, $show_buy);
+$estado   = (($_GET['estado'] ?? '') === 'comprados') ? 'bought' : 'pending';   // pestaña inicial: Pendientes
 $n_bought = $show_buy ? count(array_filter($gifts, fn($g) => $g['purchased_by'] !== null)) : 0;
 
 $page_title   = $is_mine ? 'Mi lista de regalos' : 'Lista de ' . $owner['user'];
@@ -58,7 +59,7 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
       <h2 class="h4 mb-0">
         <?= $is_mine ? 'Mis regalos' : 'Regalos de <span class="text-gradient">' . e($owner['user']) . '</span>' ?>
-        <span class="count-pill" id="giftCount"><?= count($gifts) ?></span>
+        <span class="count-pill" id="giftCount"><?= $show_buy ? ($estado === 'bought' ? $n_bought : count($gifts) - $n_bought) : count($gifts) ?></span>
       </h2>
       <?php if ($can_write): ?>
         <button class="btn btn-accent" type="button" data-bs-toggle="collapse" data-bs-target="#addGift" aria-expanded="false" aria-controls="addGift">
@@ -103,16 +104,15 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
       </div>
       <?php if ($show_buy): ?>
         <div class="btn-group mb-3" role="group" aria-label="Filtrar por estado">
-          <button type="button" class="btn btn-sm btn-outline-secondary active" data-gift-filter="all">Todos <span class="badge bg-secondary"><?= count($gifts) ?></span></button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-gift-filter="pending">Pendientes <span class="badge bg-secondary"><?= count($gifts) - $n_bought ?></span></button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" data-gift-filter="bought">Comprados <span class="badge bg-secondary"><?= $n_bought ?></span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary <?= $estado === 'pending' ? 'active' : '' ?>" data-gift-filter="pending">Pendientes <span class="badge bg-secondary"><?= count($gifts) - $n_bought ?></span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary <?= $estado === 'bought' ? 'active' : '' ?>" data-gift-filter="bought">Comprados <span class="badge bg-secondary"><?= $n_bought ?></span></button>
         </div>
       <?php endif; ?>
 
       <div class="row g-3" id="giftGrid">
         <?php foreach ($gifts as $g): $ts = strtotime($g['created_at']); ?>
           <?php $bought = $show_buy && $g['purchased_by'] !== null; $mineBuy = $bought && $g['purchased_by'] === (string) $my_id; ?>
-          <div class="col-12 col-lg-6 gift-col" data-state="<?= $bought ? 'bought' : 'pending' ?>" data-search="<?= e(mb_strtolower($g['item_name'] . ' ' . $g['item_description'])) ?>">
+          <div class="col-12 col-lg-6 gift-col <?= $show_buy && ($bought ? 'bought' : 'pending') !== $estado ? 'd-none' : '' ?>" data-state="<?= $bought ? 'bought' : 'pending' ?>" data-search="<?= e(mb_strtolower($g['item_name'] . ' ' . $g['item_description'])) ?>">
             <article class="card gift-card h-100 <?= $bought ? 'gift-bought' : '' ?>">
               <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -126,6 +126,7 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
                   <form method="POST" action="index.php" class="gift-status <?= $bought ? 'is-bought' : '' ?>">
                     <?= csrf_input() ?>
                     <input type="hidden" name="id" value="<?= (int) $g['id'] ?>">
+                    <input type="hidden" name="estado" value="<?= e($estado === 'bought' ? 'comprados' : 'pendientes') ?>" data-gift-estado>
                     <?php if ($bought): ?>
                       <input type="hidden" name="action" value="unmark_bought">
                       <span class="gift-status-text"><i class="fa-solid fa-circle-check"></i>
@@ -157,7 +158,7 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
           </div>
         <?php endforeach; ?>
       </div>
-      <p class="text-center text-muted py-4 d-none" id="giftNoResults">Ningún regalo coincide con la búsqueda.</p>
+      <p class="text-center text-muted py-4 <?= $show_buy && (($estado === 'bought' ? $n_bought : count($gifts) - $n_bought) === 0) ? '' : 'd-none' ?>" id="giftNoResults"><?= $show_buy && $estado === 'bought' ? 'Todavía no hay regalos comprados.' : ($show_buy ? 'No hay regalos pendientes.' : 'Ningún regalo coincide con la búsqueda.') ?></p>
     <?php else: ?>
       <div class="empty-state">
         <p><?= $is_mine ? 'Todavía no has añadido ningún regalo.' : e($owner['user']) . ' todavía no ha añadido regalos.' ?></p>
