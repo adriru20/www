@@ -14,7 +14,10 @@ function gift_user(string $id): ?array {
 function gift_people(string $myId): array {
   $counts = [];
   foreach (db_rows(db_query('SELECT user_id, COUNT(*) AS n FROM gift_items GROUP BY user_id')) as $r) $counts[$r['user_id']] = (int) $r['n'];
-  $people = db_rows(db_query('SELECT id, user FROM login_user WHERE id != ? ORDER BY user ASC', 's', [$myId]));
+  // Los usuarios ocultos (migración 004) no salen en las listas; si aún no existe la columna se muestran todos
+  $people = db_query('SELECT id, user FROM login_user WHERE id != ? AND oculto = 0 ORDER BY user ASC', 's', [$myId])
+         ?: db_query('SELECT id, user FROM login_user WHERE id != ? ORDER BY user ASC', 's', [$myId]);
+  $people = db_rows($people);
   foreach ($people as &$p) $p['n'] = $counts[$p['id']] ?? 0;
   return ['people' => $people, 'mine' => $counts[$myId] ?? 0];
 }
