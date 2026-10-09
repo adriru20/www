@@ -15,7 +15,7 @@ Sitio personal en PHP (sin framework) con login y varias apps.
 | `backend/sessions/`, `backend/logs/` | Ficheros de sesión y logs (no accesibles por web) |
 | `backend/database/` | Esquema SQL y `migrations/` |
 | `backend/legacy/` | Código antiguo sin uso (no se carga) |
-| `apps/` | `wiki` (+`wiki.js`), `parking` (+`parking.js`), `giftlist`, `inventario` |
+| `apps/` | `wiki`, `parking` (`api.php` + `parking.js`, tabla `parking_spots`), `giftlist` (`lib.php` + `giftlist.js`), `inventario` |
 | `apps/inventario/` | `index.php` (controlador), `lib/` (config, datos, acciones, imágenes, backups), `views/` (HTML por pestaña y modales), `thumb.php` (miniaturas), `inventario.js`, `sw.js` |
 | `src/` | `login` y páginas públicas (cartas, documentos) |
 

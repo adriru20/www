@@ -37,11 +37,6 @@
 .preview-loc { width: 60px; }
 
 /* ---------- Pantalla de inventario (rediseño) ---------- */
-.count-pill {
-  font-size: .85rem; font-weight: 600; vertical-align: middle;
-  padding: .15rem .6rem; border-radius: 999px; margin-left: .4rem;
-  background: rgba(255, 51, 133, .15); color: var(--brand-pink);
-}
 .inv-tabs { border-bottom-color: var(--surface-4); flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
 .inv-tabs .nav-link { color: var(--text-muted); white-space: nowrap; border: 0; border-bottom: 2px solid transparent; border-radius: 0; font-weight: 600; }
 .inv-tabs .nav-link:hover { color: #fff; }
@@ -53,7 +48,6 @@
 .memento-card:focus-visible { outline: 2px solid var(--brand-pink); outline-offset: 2px; }
 .badge-loc-chip { background: rgba(0, 0, 0, .75); border: 1px solid #555; color: #eee; font-weight: 500; font-size: .68rem; }
 
-.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 
 .game-box { background: rgba(255, 255, 255, .04); border: 1px solid var(--surface-4); border-radius: .6rem; padding: .6rem; }
 .tag-btn.bg-primary { color: #fff; }

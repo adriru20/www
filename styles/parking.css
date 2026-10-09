@@ -1,0 +1,47 @@
+/* PARKING */
+.parking-layout { display: grid; gap: 1.25rem; grid-template-areas: "now" "map" "form" "hist"; }
+.area-now  { grid-area: now; }
+.area-map  { grid-area: map; }
+.area-form { grid-area: form; }
+.area-hist { grid-area: hist; }
+@media (min-width: 992px) {
+  .parking-layout { grid-template-columns: minmax(0, 1fr) 400px; grid-template-areas: "map form" "now form" "hist form"; align-items: start; }
+}
+.park-map { height: 340px; border-radius: var(--radius); border: 1px solid var(--surface-4); background: var(--surface-1); z-index: 0; }
+@media (min-width: 992px) { .park-map { height: 420px; } }
+.map-fallback { display: grid; place-items: center; height: 100%; color: var(--text-muted); text-align: center; padding: 1rem; }
+
+.sync-chip { font-size: .8rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid var(--surface-4); color: var(--text-muted); background: var(--surface-3); }
+.sync-chip.ok { color: #7ee2a8; border-color: rgba(126, 226, 168, .4); }
+.sync-chip.local { color: #ffd479; border-color: rgba(255, 212, 121, .4); }
+
+/* Tarjeta de un coche aparcado */
+.spot-card { background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: var(--radius); padding: 1rem; margin-bottom: .85rem; }
+.spot-card.warn { border-color: #ffc107; }
+.spot-card.expired { border-color: #dc3545; box-shadow: 0 0 0 1px #dc3545 inset; }
+.spot-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+.spot-title { font-weight: 700; font-size: 1.1rem; }
+.spot-meta { color: var(--text-muted); font-size: .88rem; }
+.spot-note { margin: .5rem 0 0; word-break: break-word; }
+.spot-photo { width: 76px; height: 76px; object-fit: cover; border-radius: .6rem; border: 1px solid var(--surface-4); cursor: zoom-in; flex-shrink: 0; }
+.spot-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
+.chip { font-size: .8rem; padding: .2rem .6rem; border-radius: 999px; background: rgba(255, 255, 255, .07); border: 1px solid var(--surface-4); }
+.chip.chip-warn { color: #ffd479; border-color: rgba(255, 193, 7, .5); }
+.chip.chip-bad { color: #ff8a95; border-color: rgba(220, 53, 69, .6); }
+.chip.chip-ok { color: #7ee2a8; }
+.spot-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .85rem; }
+.spot-actions .btn { flex: 1 1 auto; }
+
+.photo-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: .5rem; border: 1px solid var(--surface-4); }
+
+/* Historial */
+.hist-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .8rem; background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: .6rem; margin-bottom: .5rem; }
+.hist-item .grow { flex: 1; min-width: 0; }
+.hist-item .t { font-weight: 600; }
+.hist-item .s { color: var(--text-muted); font-size: .82rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+
+/* Marcadores del mapa */
+.leaflet-container { font-family: inherit; }
+.pin { font-size: 1.6rem; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .6)); }
+.pin-label { position: absolute; left: 50%; top: -1.2rem; transform: translateX(-50%); white-space: nowrap; font-size: .7rem; font-weight: 700; padding: .05rem .4rem; border-radius: 99px; background: var(--brand-pink); color: #fff; }
+.me-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--brand-blue); border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(74, 144, 226, .35); }
