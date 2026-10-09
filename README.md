@@ -57,6 +57,9 @@ Para VS Code SFTP copia `.vscode/sftp.example.json` a `.vscode/sftp.json`.
 - Antes de ejecutar `backend/database/migraciones/002_roles_y_mejoras.sql` todo funciona como antes (modo compatible).
 - Gift list: en la lista de otra persona se puede marcar «lo he comprado yo» (quién y cuándo) y desmarcarlo. El dueño de la lista no ve nada de esto. Requiere `003_gift_comprado.sql`; sin él los botones no aparecen.
 
+Cada usuario puede cambiar su contraseña en **Mi cuenta** (`/src/cuenta/`, menú superior): pide la actual, limita los intentos fallidos y
+usa el ojito (`js/password-eye.js`, atributo `data-eye`) para ver lo que se escribe. El login también lo lleva.
+
 ## Despliegue
 
 Un push a `main` ejecuta `.github/workflows/deploy.yml`: comprueba la sintaxis PHP y sube por SFTP.
@@ -70,3 +73,10 @@ No se borra nada en el servidor: `db.local.php`, imágenes subidas, backups y lo
 - Tokens CSRF en formularios y enlaces de borrado (`backend/functions/csrf.php`).
 - Subidas de imagen validadas y sin ejecución de scripts en `apps/inventario/img/`.
 - Wiki y APIs solo con sesión; registro de usuarios desactivado (`src/login/signup.php`).
+
+## Pendientes (ideas aparcadas)
+- **Wiki desde OneDrive**: ahora el vault (`apps/wiki/vault/`, ~20 MB) va en el repositorio y se despliega con él. Se quiere leerlo desde OneDrive.
+  Opciones valoradas: (1) sincronizar la carpeta de OneDrive con `/www/apps/wiki/vault/` por SFTP desde el ordenador (rclone/WinSCP) y sacar el vault
+  del repositorio y del despliegue; (2) que el servidor lea de OneDrive (enlace compartido o app de Azure); (3) seguir con GitHub (plugin Obsidian Git).
+  Pendiente de decidir según: tipo de cuenta OneDrive (personal / Microsoft 365), si se edita desde el móvil y si el ordenador está encendido.
+- Papelera de recuperación del inventario; quitar la columna antigua `inv_objetos.localizacion`; revisar la localización «•».

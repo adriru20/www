@@ -85,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $page_title = 'Entrar';
+$page_scripts = ['/js/password-eye.js'];
 ?>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
@@ -112,7 +113,7 @@ $page_title = 'Entrar';
         </div>
         <div class="mb-4">
           <label for="pass" class="form-label">Contraseña</label>
-          <input type="password" name="pass" id="pass" class="form-control" required autocomplete="current-password">
+          <input type="password" name="pass" id="pass" class="form-control" required autocomplete="current-password" data-eye>
         </div>
         <div class="d-grid">
           <button type="submit" class="btn btn-accent btn-lg">Entrar</button>
