@@ -3,8 +3,15 @@
 
 const ADMIN_USER_RE = '/^[\p{L}\p{N}._-]{3,50}$/u';
 
+// ¿Existe ya la columna login_user.oculto? (la crea la migración 004; hasta entonces no se puede ocultar)
+function admin_hidden_ready(): bool {
+  static $ready = null;
+  return $ready ??= (db_query('SELECT oculto FROM login_user LIMIT 1') !== false);
+}
+
 function admin_users(): array {
-  $users = db_rows(db_query('SELECT id, user, permission, active, created_at, last_login FROM login_user ORDER BY user ASC'));
+  $hid = admin_hidden_ready() ? 'oculto' : '0 AS oculto';
+  $users = db_rows(db_query("SELECT id, user, permission, active, $hid, created_at, last_login FROM login_user ORDER BY user ASC"));
   $perms = [];
   foreach (db_rows(db_query('SELECT user_id, perm FROM user_permissions')) as $r) $perms[$r['user_id']][] = $r['perm'];
   foreach ($users as &$u) $u['perms'] = $perms[$u['id']] ?? [];
@@ -92,6 +99,17 @@ function admin_handle_actions(string $me): void {
       flash_add("Cuenta de «{$u['user']}» " . ($active ? 'activada.' : 'desactivada: ya no puede entrar.'), $active ? 'success' : 'info');
       break;
 
+    // Ocultar / mostrar un usuario en las listas de la web (Gift list). Sigue pudiendo entrar y se gestiona desde la pestaña Ocultos.
+    case 'set_hidden':
+      $u = admin_get($id);
+      $hide = !empty($_POST['hidden']) ? 1 : 0;
+      if (!admin_hidden_ready()) { flash_add('Falta ejecutar la migración 004 en la base de datos para poder ocultar usuarios.', 'warning'); break; }
+      if (!$u) { flash_add('Ese usuario no existe.', 'warning'); break; }
+      if ($id === $me) { flash_add('No puedes ocultar tu propia cuenta.', 'warning'); break; }
+      db_exec('UPDATE login_user SET oculto = ? WHERE id = ?', 'is', [$hide, $id]);
+      flash_add($hide ? "«{$u['user']}» ahora está oculto: no sale en las listas, pero puede entrar. Lo encontrarás en la pestaña Ocultos." : "«{$u['user']}» vuelve a mostrarse.", 'info');
+      break;
+
     case 'delete_user':
       $u = admin_get($id);
       if (!$u) { flash_add('Ese usuario ya no existe.', 'warning'); break; }
@@ -110,6 +128,7 @@ function admin_handle_actions(string $me): void {
       flash_add('Acción no reconocida.', 'danger');
   }
   // Se vuelve a la pestaña en la que estaba el administrador (los formularios envían a la URL actual)
-  header('Location: index.php' . (($_GET['ver'] ?? '') === 'inactivos' ? '?ver=inactivos' : ''));
+  $back = (string) ($_GET['ver'] ?? '');
+  header('Location: index.php' . (in_array($back, ['inactivos', 'ocultos'], true) ? '?ver=' . $back : ''));
   exit();
 }

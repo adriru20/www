@@ -12,10 +12,19 @@ $users = $ready ? admin_users() : [];
 $registry = app_registry();
 
 // Pestañas: usuarios activos / inactivos
-$ver = ($_GET['ver'] ?? '') === 'inactivos' ? 'inactivos' : 'activos';
-$n_active   = count(array_filter($users, fn($u) => (int) $u['active'] === 1));
-$n_inactive = count($users) - $n_active;
-$shown = array_values(array_filter($users, fn($u) => ((int) $u['active'] === 1) === ($ver === 'activos')));
+$can_hide = $ready && admin_hidden_ready();   // ¿está la columna «oculto»? (migración 004)
+$ver = in_array($_GET['ver'] ?? '', ['inactivos', 'ocultos'], true) ? $_GET['ver'] : 'activos';
+if ($ver === 'ocultos' && !$can_hide) $ver = 'activos';
+$isHidden = fn($u) => (int) $u['oculto'] === 1;
+$isActive = fn($u) => (int) $u['active'] === 1;
+$n_active   = count(array_filter($users, fn($u) => !$isHidden($u) && $isActive($u)));
+$n_inactive = count(array_filter($users, fn($u) => !$isHidden($u) && !$isActive($u)));
+$n_hidden   = count(array_filter($users, $isHidden));
+$shown = array_values(array_filter($users, fn($u) => match ($ver) {
+  'ocultos'   => $isHidden($u),
+  'inactivos' => !$isHidden($u) && !$isActive($u),
+  default     => !$isHidden($u) && $isActive($u),
+}));
 
 $page_title   = 'Usuarios';
 $page_scripts = ['/src/admin/usuarios.js'];
@@ -44,12 +53,22 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
         <code>backend/database/migraciones/002_roles_y_mejoras.sql</code> en phpMyAdmin y recarga esta página.
       </div>
     <?php else: ?>
-      <ul class="nav nav-tabs mb-3" aria-label="Usuarios">
-        <li class="nav-item"><a class="nav-link <?= $ver === 'activos' ? 'active' : '' ?>" href="index.php"><i class="fa-solid fa-user-check"></i> Activos <span class="count-pill"><?= $n_active ?></span></a></li>
-        <li class="nav-item"><a class="nav-link <?= $ver === 'inactivos' ? 'active' : '' ?>" href="index.php?ver=inactivos"><i class="fa-solid fa-user-slash"></i> Inactivos <span class="count-pill"><?= $n_inactive ?></span></a></li>
+      <ul class="nav nav-tabs flex-nowrap mb-3" aria-label="Usuarios">
+        <li class="nav-item"><a class="nav-link px-2 px-sm-3 <?= $ver === 'activos' ? 'active' : '' ?>" href="index.php"><i class="fa-solid fa-user-check d-none d-sm-inline"></i> Activos <span class="count-pill"><?= $n_active ?></span></a></li>
+        <li class="nav-item"><a class="nav-link px-2 px-sm-3 <?= $ver === 'inactivos' ? 'active' : '' ?>" href="index.php?ver=inactivos"><i class="fa-solid fa-user-slash d-none d-sm-inline"></i> Inactivos <span class="count-pill"><?= $n_inactive ?></span></a></li>
+        <?php if ($can_hide): ?>
+          <li class="nav-item"><a class="nav-link px-2 px-sm-3 <?= $ver === 'ocultos' ? 'active' : '' ?>" href="index.php?ver=ocultos"><i class="fa-solid fa-eye-slash d-none d-sm-inline"></i> Ocultos <span class="count-pill"><?= $n_hidden ?></span></a></li>
+        <?php endif; ?>
       </ul>
+      <?php if (!$can_hide): ?>
+        <div class="alert alert-secondary small py-2">Para poder <strong>ocultar usuarios</strong> de las listas, ejecuta en phpMyAdmin el fichero <code>backend/database/migraciones/004_usuarios_ocultos.sql</code> y recarga esta página.</div>
+      <?php endif; ?>
       <?php if (!$shown): ?>
-        <div class="empty-state"><p><?= $ver === 'activos' ? 'No hay usuarios activos.' : 'No hay usuarios inactivos. Los que desactives aparecerán aquí y podrás volver a activarlos.' ?></p></div>
+        <div class="empty-state"><p><?= match ($ver) {
+          'ocultos'   => 'No hay usuarios ocultos. Los que ocultes no saldrán en las listas de la web y los gestionarás desde aquí.',
+          'inactivos' => 'No hay usuarios inactivos. Los que desactives aparecerán aquí y podrás volver a activarlos.',
+          default     => 'No hay usuarios activos.',
+        } ?></p></div>
       <?php endif; ?>
       <div class="row g-3">
         <?php foreach ($shown as $u): $isMe = $u['id'] === $me; $off = (int) $u['active'] !== 1; ?>
@@ -61,6 +80,7 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
                     <h2 class="h5 mb-1"><?= e($u['user']) ?> <?php if ($isMe): ?><small class="text-muted">(tú)</small><?php endif; ?></h2>
                     <span class="badge <?= $roleBadge[$u['permission']] ?? 'bg-secondary' ?>"><?= e(ROLES[$u['permission']] ?? $u['permission']) ?></span>
                     <?php if ($off): ?><span class="badge bg-dark border">Desactivado</span><?php endif; ?>
+                    <?php if ($isHidden($u)): ?><span class="badge bg-dark border"><i class="fa-solid fa-eye-slash"></i> Oculto</span><?php endif; ?>
                   </div>
                   <small class="text-muted text-end">Último acceso<br><?= e($fmt($u['last_login'])) ?></small>
                 </div>
@@ -91,6 +111,13 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
                       <input type="hidden" name="active" value="<?= $off ? 1 : 0 ?>">
                       <button class="btn btn-sm btn-outline-secondary" type="submit"><?= $off ? '<i class="fa-solid fa-user-check"></i> Activar' : '<i class="fa-solid fa-user-slash"></i> Desactivar' ?></button>
                     </form>
+                    <?php if ($can_hide): ?>
+                      <form method="POST" class="d-contents m-0">
+                        <?= csrf_input() ?><input type="hidden" name="action" value="set_hidden"><input type="hidden" name="id" value="<?= e($u['id']) ?>">
+                        <input type="hidden" name="hidden" value="<?= $isHidden($u) ? 0 : 1 ?>">
+                        <button class="btn btn-sm btn-outline-secondary" type="submit" title="<?= $isHidden($u) ? 'Volver a mostrarlo en las listas' : 'No mostrarlo en las listas de la web' ?>"><?= $isHidden($u) ? '<i class="fa-solid fa-eye"></i> Mostrar' : '<i class="fa-solid fa-eye-slash"></i> Ocultar' ?></button>
+                      </form>
+                    <?php endif; ?>
                     <button class="btn btn-sm btn-outline-danger" type="button" data-user-delete="<?= e($u['id']) ?>" data-name="<?= e($u['user']) ?>"><i class="fa-solid fa-trash"></i></button>
                   <?php endif; ?>
                 </div>
