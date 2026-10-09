@@ -4,8 +4,8 @@
 -- Qué hace:
 --   1. Usuarios: nombre único, activo/desactivado, fecha de alta y último acceso, rol "visitante".
 --   2. Permisos: tabla user_permissions (qué secciones y acciones puede usar cada usuario).
---   3. Inventario: precio, "en la caja", año y duración pasan a ser números; fechas de
---      creación/modificación; índices; y las localizaciones se separan en su propia relación
+--   3. Inventario: precio, "en la caja", año y duración pasan a ser números, fechas de
+--      creación/modificación, índices, y las localizaciones se separan en su propia relación
 --      (tabla inv_objeto_localizacion) en vez de un texto "Caja 1, Estantería".
 --
 -- ANTES DE EJECUTAR (importante):
@@ -64,18 +64,18 @@ WHERE u.permission = 'user';
 -- ---------------------------------------------------------------- 3. Inventario: limpiar valores
 UPDATE inv_objetos SET cantidad = 1 WHERE cantidad IS NULL OR cantidad < 1;
 
--- Precio: "30,50" -> 30.50; lo que no sea un número -> 0
+-- Precio: "30,50" -> 30.50, lo que no sea un número -> 0
 UPDATE inv_objetos SET precio_de_venta = REPLACE(TRIM(precio_de_venta), ',', '.');
 UPDATE inv_objetos SET precio_de_venta = '0'
  WHERE precio_de_venta IS NULL OR precio_de_venta NOT REGEXP '^[0-9]+(\\.[0-9]+)?$';
 
--- "En la caja": sí/1/true -> 1; lo demás -> 0
+-- "En la caja": sí/1/true -> 1, lo demás -> 0
 UPDATE inv_objetos SET en_la_caja = CASE WHEN LOWER(TRIM(en_la_caja)) IN ('1','si','sí','true','yes','on','x') THEN '1' ELSE '0' END;
 
--- Año: solo 4 cifras; si no -> vacío
+-- Año: solo 4 cifras, si no -> vacío
 UPDATE inv_objetos SET anio_de_estreno = NULL WHERE anio_de_estreno IS NULL OR anio_de_estreno NOT REGEXP '^[0-9]{4}$';
 
--- Duración en minutos: "120" o "117 min" -> 120 / 117; cualquier otro formato -> vacío (el original está en la copia 002)
+-- Duración en minutos: "120" o "117 min" -> 120 / 117, cualquier otro formato -> vacío (el original está en la copia 002)
 UPDATE inv_objetos SET duracion = CASE
     WHEN duracion REGEXP '^[0-9]+$'        THEN duracion
     WHEN duracion REGEXP '^[0-9]+ ?min'    THEN SUBSTRING_INDEX(TRIM(REPLACE(LOWER(duracion), 'min', '')), ' ', 1)
@@ -134,8 +134,8 @@ SELECT DISTINCT t.id, l.id FROM (
 ) t JOIN inv_localizaciones l ON l.nombre = t.nombre
 WHERE t.nombre <> '';
 
--- (La columna de texto inv_objetos.localizacion se mantiene como copia; la web ya solo lee la relación.
---  Cuando todo vaya bien durante unas semanas, se podrá eliminar con:  ALTER TABLE inv_objetos DROP COLUMN localizacion; )
+-- (La columna de texto inv_objetos.localizacion se mantiene como copia, la web ya solo lee la relación.
+--  Cuando todo vaya bien durante unas semanas, se podrá eliminar con:  ALTER TABLE inv_objetos DROP COLUMN localizacion, )
 
 -- ---------------------------------------------------------------- 6. Comprobaciones (solo muestran datos)
 SELECT 'objetos' AS tabla, COUNT(*) AS filas FROM inv_objetos
