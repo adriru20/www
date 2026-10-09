@@ -109,6 +109,7 @@ function admin_handle_actions(string $me): void {
     default:
       flash_add('Acción no reconocida.', 'danger');
   }
-  header('Location: index.php');
+  // Se vuelve a la pestaña en la que estaba el administrador (los formularios envían a la URL actual)
+  header('Location: index.php' . (($_GET['ver'] ?? '') === 'inactivos' ? '?ver=inactivos' : ''));
   exit();
 }

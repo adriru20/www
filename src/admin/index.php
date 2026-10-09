@@ -11,6 +11,12 @@ if ($ready) admin_handle_actions($me);
 $users = $ready ? admin_users() : [];
 $registry = app_registry();
 
+// Pestañas: usuarios activos / inactivos
+$ver = ($_GET['ver'] ?? '') === 'inactivos' ? 'inactivos' : 'activos';
+$n_active   = count(array_filter($users, fn($u) => (int) $u['active'] === 1));
+$n_inactive = count($users) - $n_active;
+$shown = array_values(array_filter($users, fn($u) => ((int) $u['active'] === 1) === ($ver === 'activos')));
+
 $page_title   = 'Usuarios';
 $page_scripts = ['/src/admin/usuarios.js'];
 $data = [];
@@ -38,8 +44,15 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
         <code>backend/database/migraciones/002_roles_y_mejoras.sql</code> en phpMyAdmin y recarga esta página.
       </div>
     <?php else: ?>
+      <ul class="nav nav-tabs mb-3" aria-label="Usuarios">
+        <li class="nav-item"><a class="nav-link <?= $ver === 'activos' ? 'active' : '' ?>" href="index.php"><i class="fa-solid fa-user-check"></i> Activos <span class="count-pill"><?= $n_active ?></span></a></li>
+        <li class="nav-item"><a class="nav-link <?= $ver === 'inactivos' ? 'active' : '' ?>" href="index.php?ver=inactivos"><i class="fa-solid fa-user-slash"></i> Inactivos <span class="count-pill"><?= $n_inactive ?></span></a></li>
+      </ul>
+      <?php if (!$shown): ?>
+        <div class="empty-state"><p><?= $ver === 'activos' ? 'No hay usuarios activos.' : 'No hay usuarios inactivos. Los que desactives aparecerán aquí y podrás volver a activarlos.' ?></p></div>
+      <?php endif; ?>
       <div class="row g-3">
-        <?php foreach ($users as $u): $isMe = $u['id'] === $me; $off = (int) $u['active'] !== 1; ?>
+        <?php foreach ($shown as $u): $isMe = $u['id'] === $me; $off = (int) $u['active'] !== 1; ?>
           <div class="col-12 col-lg-6">
             <article class="card user-card h-100 <?= $off ? 'is-off' : '' ?>">
               <div class="card-body">
