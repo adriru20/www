@@ -25,7 +25,10 @@ function app_registry(): array {
     ],
     'giftlist' => [
       'label' => 'Gift list', 'icon' => 'fa-gift', 'href' => '/apps/giftlist/',
-      'desc' => 'Listas de regalos de la familia.', 'subs' => [],
+      'desc' => 'Listas de regalos de la familia.',
+      'subs' => [
+        'manage' => 'Gestionar las listas de los demás (añadir/editar/borrar)',
+      ],
     ],
     'inventario' => [
       'label' => 'Inventario', 'icon' => 'fa-boxes-stacked', 'href' => '/apps/inventario/',

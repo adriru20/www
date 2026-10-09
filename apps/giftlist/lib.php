@@ -57,36 +57,57 @@ function gift_validate(array $in): array {
   return [['name' => $name, 'desc' => $desc, 'url' => $url], null];
 }
 
-// Acciones de escritura (solo sobre MI lista). Termina siempre en redirección.
+// ¿Puede añadir, editar y borrar en las listas de OTRAS personas? (subpermiso giftlist.manage; el admin siempre)
+// Con el SQL de roles sin ejecutar (modo compatible) no se concede a nadie.
+function gift_can_manage(): bool {
+  return acl_state()['ready'] && has_perm('giftlist.manage');
+}
+
+// Acciones de escritura: sobre MI lista, o sobre la de otra persona si tengo el subpermiso. Termina siempre en redirección.
 function gift_handle_actions(string $myId): void {
   if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
   csrf_verify_post();
   $id = (int) ($_POST['id'] ?? 0);
-  $redirect = 'index.php';
+
+  // Lista sobre la que se escribe: la mía por defecto
+  $target = (string) ($_POST['owner'] ?? '');
+  if ($target === '') $target = $myId;
+  $mine = ($target === $myId);
+  $redirect = $mine ? 'index.php' : 'index.php?view=' . urlencode($target);
+  $writes = in_array($_POST['action'] ?? '', ['add_item', 'edit_item', 'delete_item'], true);
+  if ($writes && !$mine) {
+    $targetUser = gift_user($target);
+    if (!gift_can_manage() || !$targetUser) {
+      flash_add($targetUser ? 'No tienes permiso para modificar la lista de otras personas.' : 'No existe esa lista.', 'warning');
+      header('Location: index.php');
+      exit();
+    }
+  }
+  $whose = $mine ? 'tu lista' : 'la lista de ' . ($targetUser['user'] ?? '');
 
   switch ($_POST['action'] ?? '') {
     case 'add_item':
       [$d, $err] = gift_validate($_POST);
       if ($err) { flash_add($err, 'danger'); break; }
-      $r = db_exec('INSERT INTO gift_items (user_id, item_name, item_description, item_url) VALUES (?, ?, ?, ?)', 'ssss', [$myId, $d['name'], $d['desc'], $d['url']]);
-      $r['ok'] ? flash_add('«' . $d['name'] . '» añadido a tu lista.') : flash_add('No se pudo guardar el regalo.', 'danger');
+      $r = db_exec('INSERT INTO gift_items (user_id, item_name, item_description, item_url) VALUES (?, ?, ?, ?)', 'ssss', [$target, $d['name'], $d['desc'], $d['url']]);
+      $r['ok'] ? flash_add('«' . $d['name'] . '» añadido a ' . $whose . '.') : flash_add('No se pudo guardar el regalo.', 'danger');
       break;
 
     case 'edit_item':
       [$d, $err] = gift_validate($_POST);
       if ($err) { flash_add($err, 'danger'); break; }
-      $own = db_query('SELECT id FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $myId]);
-      if (!$own || !$own->fetch_assoc()) { flash_add('Ese regalo no existe o no es tuyo.', 'warning'); break; }
-      $r = db_exec('UPDATE gift_items SET item_name = ?, item_description = ?, item_url = ? WHERE id = ? AND user_id = ?', 'sssis', [$d['name'], $d['desc'], $d['url'], $id, $myId]);
+      $own = db_query('SELECT id FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $target]);
+      if (!$own || !$own->fetch_assoc()) { flash_add($mine ? 'Ese regalo no existe o no es tuyo.' : 'Ese regalo no existe o no está en esa lista.', 'warning'); break; }
+      $r = db_exec('UPDATE gift_items SET item_name = ?, item_description = ?, item_url = ? WHERE id = ? AND user_id = ?', 'sssis', [$d['name'], $d['desc'], $d['url'], $id, $target]);
       $r['ok'] ? flash_add('«' . $d['name'] . '» actualizado.') : flash_add('No se pudo actualizar el regalo.', 'danger');
       break;
 
     case 'delete_item':
-      $row = db_query('SELECT item_name FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $myId]);
+      $row = db_query('SELECT item_name FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $target]);
       $row = $row ? $row->fetch_assoc() : null;
       if (!$row) { flash_add('Ese regalo ya no existe.', 'warning'); break; }
-      db_exec('DELETE FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $myId]);
-      flash_add('«' . $row['item_name'] . '» eliminado de tu lista.', 'info');
+      db_exec('DELETE FROM gift_items WHERE id = ? AND user_id = ?', 'is', [$id, $target]);
+      flash_add('«' . $row['item_name'] . '» eliminado de ' . $whose . '.', 'info');
       break;
 
     // ---- Marcar / desmarcar "lo he comprado" (solo en listas de otras personas)
