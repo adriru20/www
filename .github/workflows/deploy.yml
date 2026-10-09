@@ -71,7 +71,7 @@ jobs:
             fi
             echo "open sftp://$FTP_HOST"
             echo "user \"$ESC_USER\" \"$ESC_PASS\""
-            echo "mirror -R -v --exclude .git/ --exclude .github/ --exclude .vscode/ --exclude apps/wiki/vault/.obsidian/ --exclude backend/logs/ --exclude apps/inventario/backup/ --exclude README.md --exclude .gitignore ./ /www/"
+            echo "mirror -R -v --exclude .git/ --exclude .github/ --exclude .vscode/ --exclude apps/wiki/vault/ --exclude backend/logs/ --exclude apps/inventario/backup/ --exclude README.md --exclude .gitignore ./ /www/"
             echo "cls -l /www/version.txt"
             echo "cls -l /www/apps/giftlist/lib.php"
             echo "cls -l /www/"

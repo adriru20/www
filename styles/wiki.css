@@ -97,3 +97,11 @@
   #sidebar { width: 100%; position: static; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--surface-4); }
   #content { padding: 1.5rem 1rem; }
 }
+
+/* Sincronización con OneDrive */
+.sync-btn { float: right; background: none; border: 0; color: var(--brand-blue); min-width: 1.6rem; min-height: 1.6rem; margin: -.2rem 0; padding: 0 .25rem; line-height: 1; cursor: pointer; }
+.sync-btn:hover { color: var(--brand-pink); }
+.sync-btn:disabled { opacity: .6; cursor: default; }
+.sync-btn.spin i { animation: sync-spin 1s linear infinite; }
+@keyframes sync-spin { to { transform: rotate(360deg); } }
+.sync-status { font-size: .75rem; color: var(--text-muted, #8a94a0); margin: -.35rem 0 .9rem; min-height: 1em; }
