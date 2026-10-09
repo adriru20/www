@@ -43,7 +43,7 @@
       $n = $locUsage[$l['nombre']] ?? 0;
     ?>
       <div class="col">
-        <div class="card memento-card" role="button" tabindex="0" data-edit="loc" data-id="<?= (int) $l['id'] ?>" aria-label="Editar <?= h($l['nombre']) ?>">
+        <div class="card memento-card" role="button" tabindex="0" data-edit="loc" data-id="<?= (int) $l['id'] ?>" aria-label="Ver qué hay en <?= h($l['nombre']) ?>">
           <div class="position-absolute top-0 end-0 p-2" style="z-index:10">
             <span class="badge badge-loc-chip"><?= $n ?> <?= $n === 1 ? 'objeto' : 'objetos' ?></span>
           </div>

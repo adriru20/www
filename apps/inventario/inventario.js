@@ -117,6 +117,68 @@
     modal('modalLoc').show();
   }
 
+  // ---------- Panel «qué hay en esta localización» ----------
+  const thumbUrl = (v) => {
+    v = (v || '').trim();
+    if (!v) return fallbackSvg;
+    if (/^(https?:|data:)/i.test(v)) return v;
+    return 'thumb.php?f=' + encodeURIComponent(v.split('/').pop());
+  };
+  const locCache = {};
+  let locObjsCurrent = null;
+
+  function renderLocObjs(res) {
+    const grid = $('locObjsGrid');
+    grid.textContent = '';
+    $('locObjsLoading').classList.add('d-none');
+    const n = res.objs.length;
+    $('locObjsSub').textContent = (res.loc.categoria ? res.loc.categoria + ' · ' : '') + n + (n === 1 ? ' objeto' : ' objetos');
+    const desc = $('locObjsDesc');
+    desc.textContent = res.loc.descripcion_del_contenido || '';
+    desc.classList.toggle('d-none', !res.loc.descripcion_del_contenido);
+    $('locObjsEmpty').classList.toggle('d-none', n > 0);
+    res.objs.forEach((o) => {
+      DATA.obj[o.id] = o;                                   // el formulario de objeto lo rellena desde aquí
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'loc-obj'; b.dataset.locObj = o.id;
+      b.title = o.objeto + (Number(o.cantidad) > 1 ? ' (x' + o.cantidad + ')' : '');
+      const img = document.createElement('img');
+      img.src = thumbUrl(o.portada_http); img.alt = ''; img.loading = 'lazy';
+      img.addEventListener('error', () => { img.src = fallbackSvg; }, { once: true });
+      const name = document.createElement('span');
+      name.className = 'loc-obj-name'; name.textContent = o.objeto || 'Sin título';
+      const kind = document.createElement('small');
+      kind.className = 'loc-obj-kind'; kind.textContent = o.tipo || '';
+      b.append(img, name, kind);
+      grid.appendChild(b);
+    });
+  }
+
+  function openLocObjs(id) {
+    const l = DATA.loc[id]; if (!l) return;
+    locObjsCurrent = id;
+    $('locObjsTitle').textContent = l.nombre || 'Localización';
+    $('locObjsSub').textContent = '';
+    $('locObjsDesc').classList.add('d-none');
+    $('locObjsGrid').textContent = '';
+    $('locObjsEmpty').classList.add('d-none');
+    $('locObjsLoading').classList.remove('d-none');
+    $('locObjsEdit').querySelector('span').textContent = PERM.edit ? 'Editar localización' : 'Ver detalle';
+    modal('modalLocObjs').show();
+    if (locCache[id]) return renderLocObjs(locCache[id]);
+    fetch('index.php?ajax=loc_objs&id=' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
+      .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then((res) => { locCache[id] = res; if (locObjsCurrent === id) renderLocObjs(res); })
+      .catch(() => { $('locObjsLoading').textContent = 'No se pudo cargar el contenido. Inténtalo de nuevo.'; });
+  }
+
+  // Cierra el panel y, cuando termina de cerrarse, ejecuta la acción (evita dos ventanas a la vez)
+  function afterLocPanel(fn) {
+    const el = $('modalLocObjs');
+    el.addEventListener('hidden.bs.modal', fn, { once: true });
+    bootstrap.Modal.getOrCreateInstance(el).hide();
+  }
+
   // ---------- Confirmar borrado ----------
   function confirmDelete(btn) {
     $('c_action').value = btn.dataset.confirm;
@@ -135,8 +197,12 @@
     const card = t.closest('[data-edit]');
     if (card && !t.closest('a, button')) {
       const kind = card.dataset.edit, id = card.dataset.id;
-      return kind === 'obj' ? fillObj(DATA.obj[id]) : fillLoc(DATA.loc[id]);
+      return kind === 'obj' ? fillObj(DATA.obj[id]) : openLocObjs(id);
     }
+
+    const lo = t.closest('[data-loc-obj]');
+    if (lo) { const o = DATA.obj[lo.dataset.locObj]; return o && afterLocPanel(() => fillObj(o)); }
+    if (t.closest('#locObjsEdit')) { const id = locObjsCurrent; return afterLocPanel(() => fillLoc(DATA.loc[id])); }
     const nw = t.closest('[data-inv-new]');
     if (nw) return nw.dataset.invNew === 'obj' ? fillObj(null) : fillLoc(null);
 

@@ -149,6 +149,14 @@ function inv_objects_in_location(int $locId): array {
   return array_map('intval', array_column(inv_rows(inv_query('SELECT objeto_id FROM inv_objeto_localizacion WHERE localizacion_id = ?', 'i', [$locId])), 'objeto_id'));
 }
 
+// Objetos (filas completas, con su texto de localizaciones) que están en una localización
+function inv_objects_in_location_rows(int $locId): array {
+  $r = inv_query('SELECT o.* FROM inv_objetos o JOIN inv_objeto_localizacion j ON j.objeto_id = o.id WHERE j.localizacion_id = ? ORDER BY o.objeto ASC, o.id ASC', 'i', [$locId]);
+  $rows = $r ? inv_rows($r) : [];
+  inv_attach_locations($rows);
+  return $rows;
+}
+
 // Valores únicos para desplegables y sugerencias
 function inv_options(): array {
   $col = fn(string $sql, string $c) => array_values(array_filter(array_column(inv_rows(inv_query($sql)), $c), fn($v) => $v !== null && $v !== ''));
