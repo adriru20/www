@@ -19,7 +19,7 @@ function inv_handle_actions(): void {
     'save_obj', 'save_loc' => $id ? 'inventario.edit' : 'inventario.add',
     'upload_img'           => 'inventario.add',
     'rename_img'           => 'inventario.edit',
-    'delete_obj', 'delete_loc', 'delete_img' => 'inventario.delete',
+    'delete_obj', 'delete_loc', 'delete_img', 'delete_unused_img' => 'inventario.delete',
     default                => null,
   };
   if ($needs !== null && !has_perm($needs)) {
@@ -88,6 +88,16 @@ function inv_handle_actions(): void {
       $uses = inv_image_usage()[$name] ?? 0;
       if (inv_delete_image($name)) inv_flash('Imagen «' . $name . '» eliminada.' . ($uses ? " Estaba usada en $uses elemento(s)." : ''), $uses ? 'warning' : 'info');
       else inv_flash('No se pudo eliminar la imagen.', 'danger');
+      break;
+
+    case 'delete_unused_img':
+      $unused = inv_unused_images();
+      if ($unused === null) { inv_flash('No se pudo comprobar qué imágenes se usan, así que no se ha borrado nada.', 'danger'); break; }
+      $freed = inv_images_size($unused);
+      $n = 0;
+      foreach ($unused as $img) if (inv_delete_image($img)) $n++;
+      if (!$unused) inv_flash('No había imágenes sin usar.', 'info');
+      else inv_flash($n . ' imagen(es) sin usar eliminada(s). Espacio liberado: ' . inv_format_bytes($freed) . '.' . ($n < count($unused) ? ' (' . (count($unused) - $n) . ' no se pudieron borrar.)' : ''), $n < count($unused) ? 'warning' : 'success');
       break;
 
     default:

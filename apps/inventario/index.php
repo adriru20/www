@@ -37,8 +37,8 @@ $flash   = inv_take_flash();
 $opts    = inv_options();
 $images  = inv_list_images();
 $locMap  = array_column(inv_rows(inv_query('SELECT nombre, categoria FROM inv_localizaciones')), 'categoria', 'nombre');
-$f = $list = $locUsage = $usage = $stats = null;
-$q_img = '';
+$f = $list = $locUsage = $usage = $stats = $img_stats = null;
+$q_img = $ver_img = '';
 $data = ['obj' => [], 'loc' => [], 'perm' => $perm];   // datos para rellenar los formularios de edición
 
 switch ($tab) {
@@ -57,11 +57,16 @@ switch ($tab) {
     break;
   case 'imagenes':
     $q_img = trim((string) ($_GET['q_img'] ?? ''));
-    $names = $q_img === '' ? $images : array_values(array_filter($images, fn($n) => stripos($n, $q_img) !== false));
+    $usage = inv_image_usage();                      // null = no se pudo comprobar
+    $unused = inv_unused_images($images, $usage);
+    $img_stats = ['total' => count($images), 'unused' => $unused === null ? null : count($unused), 'unused_size' => $unused === null ? 0 : inv_images_size($unused)];
+    $ver_img = ($unused !== null && in_array($_GET['ver_img'] ?? '', ['sin_usar', 'usadas'], true)) ? $_GET['ver_img'] : '';
+    $pool = $ver_img === 'sin_usar' ? $unused : ($ver_img === 'usadas' ? array_values(array_diff($images, $unused)) : $images);
+    $names = $q_img === '' ? $pool : array_values(array_filter($pool, fn($n) => stripos($n, $q_img) !== false));
     $pages = max(1, (int) ceil(count($names) / INV_PAGE_SIZE));
     $page = min($page, $pages);
     $list = ['rows' => array_slice($names, ($page - 1) * INV_PAGE_SIZE, INV_PAGE_SIZE), 'total' => count($names), 'pages' => $pages, 'page' => $page];
-    $usage = inv_image_usage();
+    $usage ??= [];
     $count = $list['total'];
     break;
   case 'resumen':
