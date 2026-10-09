@@ -54,7 +54,8 @@
 
 /* Resumen */
 .stat-card { display: block; padding: 1.1rem 1.25rem; background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: var(--radius); color: var(--text-main); height: 100%; }
-a.stat-card:hover { border-color: var(--brand-pink); color: var(--text-main); }
+a.stat-card { text-decoration: none; transition: border-color .15s, transform .15s; }
+a.stat-card:hover { border-color: var(--brand-pink); color: var(--text-main); transform: translateY(-2px); }
 .stat-num { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
 .stat-label { color: var(--text-muted); font-size: .85rem; }
 .stat-row { margin-bottom: .6rem; }
