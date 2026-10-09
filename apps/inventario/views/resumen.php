@@ -13,11 +13,23 @@ $bar = function (array $data, int $max = 8, string $link = '') {
 };
 ?>
 <div class="row g-3 mb-4">
-  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num"><?= $stats['objetos'] ?></div><div class="stat-label">objetos</div></div></div>
-  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num"><?= $stats['unidades'] ?></div><div class="stat-label">unidades en total</div></div></div>
-  <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-num"><?= $stats['localizaciones'] ?></div><div class="stat-label">localizaciones</div></div></div>
   <div class="col-6 col-lg-3">
-    <a class="stat-card d-block" href="?tab=objetos&ver=venta">
+    <a class="stat-card" href="?tab=objetos&f_tipo=Objetos">
+      <div class="stat-num"><?= (int) ($stats['por_tipo']['Objetos'] ?? 0) ?></div><div class="stat-label">objetos</div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a class="stat-card" href="?tab=objetos&f_tipo=Juegos">
+      <div class="stat-num"><?= (int) ($stats['por_tipo']['Juegos'] ?? 0) ?></div><div class="stat-label">juegos</div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a class="stat-card" href="?tab=localizaciones">
+      <div class="stat-num"><?= $stats['localizaciones'] ?></div><div class="stat-label">localizaciones</div>
+    </a>
+  </div>
+  <div class="col-6 col-lg-3">
+    <a class="stat-card" href="?tab=objetos&ver=venta">
       <div class="stat-num text-success"><?= number_format($stats['venta_total'], 2, ',', '.') ?> €</div>
       <div class="stat-label"><?= $stats['venta_n'] ?> a la venta</div>
     </a>

@@ -99,6 +99,7 @@ function admin_handle_actions(string $me): void {
       if ($u['permission'] === 'admin' && admin_count_admins($id) < 1) { flash_add('Tiene que quedar al menos un administrador.', 'warning'); break; }
       // Sus datos propios (permisos, regalos, sitios de parking) se borran con él
       db_exec('DELETE FROM user_permissions WHERE user_id = ?', 's', [$id]);
+      db_exec('UPDATE gift_items SET purchased_by = NULL, purchased_at = NULL WHERE purchased_by = ?', 's', [$id]); // (si aún no existe la columna, no pasa nada)
       db_exec('DELETE FROM gift_items WHERE user_id = ?', 's', [$id]);
       db_exec('DELETE FROM parking_spots WHERE user_id = ?', 's', [$id]);
       db_exec('DELETE FROM login_user WHERE id = ?', 's', [$id]);

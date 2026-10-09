@@ -19,7 +19,9 @@ if (!$owner) {                 // lista de un usuario que no existe
 }
 
 $people = gift_people($my_id);
-$gifts  = gift_list($view_id);
+$show_buy = !$is_mine && gift_purchase_ready();       // botones de "comprado" (solo en listas ajenas)
+$gifts    = gift_list($view_id, $show_buy);
+$n_bought = $show_buy ? count(array_filter($gifts, fn($g) => $g['purchased_by'] !== null)) : 0;
 
 $page_title   = $is_mine ? 'Mi lista de regalos' : 'Lista de ' . $owner['user'];
 $page_scripts = ['/apps/giftlist/giftlist.js'];
@@ -97,11 +99,19 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
       <div class="search-container mb-3">
         <input type="search" id="giftSearch" class="form-control" placeholder="Buscar en esta lista…" autocomplete="off" aria-label="Buscar en esta lista">
       </div>
+      <?php if ($show_buy): ?>
+        <div class="btn-group mb-3" role="group" aria-label="Filtrar por estado">
+          <button type="button" class="btn btn-sm btn-outline-secondary active" data-gift-filter="all">Todos <span class="badge bg-secondary"><?= count($gifts) ?></span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-gift-filter="pending">Pendientes <span class="badge bg-secondary"><?= count($gifts) - $n_bought ?></span></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-gift-filter="bought">Comprados <span class="badge bg-secondary"><?= $n_bought ?></span></button>
+        </div>
+      <?php endif; ?>
 
       <div class="row g-3" id="giftGrid">
         <?php foreach ($gifts as $g): $ts = strtotime($g['created_at']); ?>
-          <div class="col-12 col-lg-6 gift-col" data-search="<?= e(mb_strtolower($g['item_name'] . ' ' . $g['item_description'])) ?>">
-            <article class="card gift-card h-100">
+          <?php $bought = $show_buy && $g['purchased_by'] !== null; $mineBuy = $bought && $g['purchased_by'] === (string) $my_id; ?>
+          <div class="col-12 col-lg-6 gift-col" data-state="<?= $bought ? 'bought' : 'pending' ?>" data-search="<?= e(mb_strtolower($g['item_name'] . ' ' . $g['item_description'])) ?>">
+            <article class="card gift-card h-100 <?= $bought ? 'gift-bought' : '' ?>">
               <div class="card-body d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-start gap-2">
                   <h3 class="h5 mb-1"><?= e($g['item_name']) ?></h3>
@@ -109,6 +119,24 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
                 </div>
                 <?php if (trim((string) $g['item_description']) !== ''): ?>
                   <p class="gift-desc mb-2"><?= nl2br(e($g['item_description'])) ?></p>
+                <?php endif; ?>
+                <?php if ($show_buy): ?>
+                  <form method="POST" action="index.php" class="gift-status <?= $bought ? 'is-bought' : '' ?>">
+                    <?= csrf_input() ?>
+                    <input type="hidden" name="id" value="<?= (int) $g['id'] ?>">
+                    <?php if ($bought): ?>
+                      <input type="hidden" name="action" value="unmark_bought">
+                      <span class="gift-status-text"><i class="fa-solid fa-circle-check"></i>
+                        <?= $mineBuy ? 'Lo has comprado tú' : 'Comprado por <strong>' . e($g['buyer'] ?? '¿?') . '</strong>' ?>
+                        <small class="text-muted">· <?= e(date('d/m/Y H:i', strtotime($g['purchased_at']))) ?></small></span>
+                      <?php if ($mineBuy || is_admin()): ?>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Si te has equivocado"><i class="fa-solid fa-rotate-left"></i> Desmarcar</button>
+                      <?php endif; ?>
+                    <?php else: ?>
+                      <input type="hidden" name="action" value="mark_bought">
+                      <button type="submit" class="btn btn-sm btn-success"><i class="fa-solid fa-gift"></i> Lo he comprado yo</button>
+                    <?php endif; ?>
+                  </form>
                 <?php endif; ?>
                 <div class="mt-auto d-flex flex-wrap gap-2 pt-2">
                   <?php if ($g['item_url'] && preg_match('#^https?://#i', $g['item_url'])): ?>

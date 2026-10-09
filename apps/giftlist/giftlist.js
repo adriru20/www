@@ -4,23 +4,28 @@
   const $ = (id) => document.getElementById(id);
   const DATA = JSON.parse(($('gift-data') || {}).textContent || '{}');
 
-  // Buscador instantáneo
+  // Buscador instantáneo + filtro por estado (Todos / Pendientes / Comprados)
   const search = $('giftSearch');
-  if (search) {
-    const cols = [...document.querySelectorAll('.gift-col')];
-    const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    search.addEventListener('input', () => {
-      const q = norm(search.value.trim());
-      let shown = 0;
-      cols.forEach((c) => {
-        const ok = !q || norm(c.dataset.search).includes(q);
-        c.classList.toggle('d-none', !ok);
-        if (ok) shown++;
-      });
-      $('giftNoResults').classList.toggle('d-none', shown > 0);
-      $('giftCount').textContent = q ? shown + ' de ' + cols.length : cols.length;
+  const cols = [...document.querySelectorAll('.gift-col')];
+  let state = 'all';
+  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  function applyFilters() {
+    const q = search ? norm(search.value.trim()) : '';
+    let shown = 0;
+    cols.forEach((c) => {
+      const ok = (!q || norm(c.dataset.search).includes(q)) && (state === 'all' || c.dataset.state === state);
+      c.classList.toggle('d-none', !ok);
+      if (ok) shown++;
     });
+    if ($('giftNoResults')) $('giftNoResults').classList.toggle('d-none', shown > 0);
+    if ($('giftCount')) $('giftCount').textContent = (q || state !== 'all') ? shown + ' de ' + cols.length : cols.length;
   }
+  if (search) search.addEventListener('input', applyFilters);
+  document.querySelectorAll('[data-gift-filter]').forEach((b) => b.addEventListener('click', () => {
+    state = b.dataset.giftFilter;
+    document.querySelectorAll('[data-gift-filter]').forEach((x) => x.classList.toggle('active', x === b));
+    applyFilters();
+  }));
 
   // Editar / borrar (delegación)
   document.addEventListener('click', (e) => {

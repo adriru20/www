@@ -262,3 +262,9 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
 .chip.chip-ok { color: #7ee2a8; }
 .spot-actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .85rem; }
 .spot-actions .btn { flex: 1 1 auto; }
+
+/* Gift list: regalos comprados */
+.gift-bought { border-color: rgba(126, 226, 168, .45); background: linear-gradient(0deg, rgba(126, 226, 168, .05), rgba(126, 226, 168, .05)), var(--surface-3); }
+.gift-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--surface-4); }
+.gift-status-text { color: #7ee2a8; font-size: .9rem; }
+.gift-status:not(.is-bought) { justify-content: flex-start; }

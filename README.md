@@ -55,6 +55,7 @@ Para VS Code SFTP copia `.vscode/sftp.example.json` a `.vscode/sftp.json`.
 - En el código: `require_app('wiki')` en la página, `require_app_api('wiki')` en las APIs y `has_perm('inventario.edit')` para acciones.
 - Tablas: `login_user` (rol, activo, último acceso) y `user_permissions` (qué puede hacer cada usuario).
 - Antes de ejecutar `backend/database/migraciones/002_roles_y_mejoras.sql` todo funciona como antes (modo compatible).
+- Gift list: en la lista de otra persona se puede marcar «lo he comprado yo» (quién y cuándo) y desmarcarlo. El dueño de la lista no ve nada de esto. Requiere `003_gift_comprado.sql`; sin él los botones no aparecen.
 
 ## Despliegue
 
