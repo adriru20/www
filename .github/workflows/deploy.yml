@@ -93,7 +93,8 @@ jobs:
           $AUTOCONFIRM
           open sftp://$FTP_HOST
           user $FTP_USER \"$FTP_PASS\"
-          pwd
+          cls -l /homepages/28/d1007113302/htdocs/www/
+          cls -l /
           cls -l /homepages/28/d1007113302/htdocs/www/version.txt
           cls -l /homepages/28/d1007113302/htdocs/www/apps/giftlist/lib.php
           bye
