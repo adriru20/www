@@ -202,6 +202,17 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
 .app-card h2 { font-size: 1.15rem; margin: 0; }
 .app-card p { margin: 0; color: var(--text-muted); font-size: .9rem; }
 
+/* Móvil: botones en cuadrícula de 2 columnas */
+@media (max-width: 575.98px) {
+  .app-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+  .app-card { align-items: center; text-align: center; padding: 1.1rem .6rem; gap: .25rem; }
+  .app-card .app-icon { width: 52px; height: 52px; font-size: 1.4rem; margin-bottom: .35rem; }
+  .app-card h2 { font-size: 1rem; }
+  .app-card p { font-size: .75rem; line-height: 1.25; }
+  .hero { padding: 1.25rem 0 .5rem; }
+  .hero img { width: 110px; }
+}
+
 /* ---------- Login ---------- */
 .auth-wrap { display: grid; place-items: center; flex: 1 0 auto; padding: 2rem 1rem; }
 .auth-card { width: 100%; max-width: 420px; padding: 2rem; }

@@ -21,7 +21,7 @@ define('INV_FALLBACK_SVG', "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http:
 inv_handle_actions();   // POST: guarda/borra y redirige
 
 // ---------------------------------------------------------------- Datos de la pestaña
-$tab  = in_array($_GET['tab'] ?? '', ['objetos', 'localizaciones', 'imagenes', 'resumen'], true) ? $_GET['tab'] : 'objetos';
+$tab  = in_array($_GET['tab'] ?? '', ['resumen', 'objetos', 'localizaciones', 'imagenes'], true) ? $_GET['tab'] : 'resumen';
 $page = max(1, (int) ($_GET['p'] ?? 1));
 
 // Copia de seguridad semanal automática (si toca); nunca debe romper la página

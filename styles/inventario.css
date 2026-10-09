@@ -70,3 +70,4 @@ a.stat-card:hover { border-color: var(--brand-pink); color: var(--text-main); }
 /* Las etiquetas de las tarjetas no deben pisarse en pantallas estrechas */
 .memento-card > .position-absolute { max-width: 50%; }
 .memento-card > .position-absolute .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 575.98px) { .stat-num { font-size: 1.55rem; white-space: nowrap; } }
