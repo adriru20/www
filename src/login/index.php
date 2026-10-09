@@ -15,6 +15,7 @@ if (is_logged_in()) {
 $error = '';
 $info  = ($_GET['msg'] ?? '') === 'logout' ? 'Has cerrado la sesión.' : '';
 if (($_GET['msg'] ?? '') === 'disabled') $error = 'Tu cuenta está desactivada. Habla con el administrador.';
+if (($_GET['msg'] ?? '') === 'expired') $info = 'La contraseña de tu cuenta ha cambiado, así que se ha cerrado esta sesión. Entra con la nueva.';
 
 // Límite de intentos fallidos por IP y usuario (5 en 15 minutos)
 $max_fails = 5;
@@ -62,8 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($ok) {
+      $final_hash = $row['pass'];
       if (password_needs_rehash($row['pass'], PASSWORD_DEFAULT)) {
-        $new_hash = password_hash($pass, PASSWORD_DEFAULT);
+        $new_hash = $final_hash = password_hash($pass, PASSWORD_DEFAULT);
         $up = $conn->prepare('UPDATE login_user SET pass = ? WHERE id = ?');
         $up->bind_param('ss', $new_hash, $row['id']);
         $up->execute();
@@ -75,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $_SESSION['user_id'] = $row['id'];
       $_SESSION['username'] = $row['user'];
       $_SESSION['permission'] = $row['permission'];
+      $_SESSION['pv'] = pass_stamp($final_hash);   // la sesión queda ligada a esta contraseña
       header('Location: ' . $next);
       exit();
     }

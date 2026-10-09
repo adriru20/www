@@ -85,8 +85,10 @@ function admin_handle_actions(string $me): void {
       $pass = (string) ($_POST['pass'] ?? '');
       if (!$u) { flash_add('Ese usuario no existe.', 'warning'); break; }
       if (mb_strlen($pass) < 8) { flash_add('La contraseña debe tener al menos 8 caracteres.', 'danger'); break; }
-      db_exec('UPDATE login_user SET pass = ? WHERE id = ?', 'ss', [password_hash($pass, PASSWORD_DEFAULT), $id]);
-      flash_add("Contraseña de «{$u['user']}» cambiada. Díselo por un canal seguro.");
+      $newHash = password_hash($pass, PASSWORD_DEFAULT);
+      db_exec('UPDATE login_user SET pass = ? WHERE id = ?', 'ss', [$newHash, $id]);
+      if ($id === $me) $_SESSION['pv'] = pass_stamp($newHash);   // si es la propia, esta sesión sigue abierta
+      flash_add("Contraseña de «{$u['user']}» cambiada" . ($id === $me ? '.' : ': sus sesiones abiertas se cerrarán. Díselo por un canal seguro.'));
       break;
 
     case 'set_active':

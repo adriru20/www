@@ -44,11 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } elseif ($new === $cur) {
     flash_add('La contraseña nueva debe ser distinta de la actual.', 'warning');
   } else {
-    $ok = db_exec('UPDATE login_user SET pass = ? WHERE id = ?', 'ss', [password_hash($new, PASSWORD_DEFAULT), $uid]);
+    $newHash = password_hash($new, PASSWORD_DEFAULT);
+    $ok = db_exec('UPDATE login_user SET pass = ? WHERE id = ?', 'ss', [$newHash, $uid]);
     if ($ok['ok']) {
       @unlink($lock_file);
       session_regenerate_id(true);
-      flash_add('Contraseña cambiada correctamente.');
+      $_SESSION['pv'] = pass_stamp($newHash);   // esta sesión sigue abierta; las demás se cierran solas
+      flash_add('Contraseña cambiada correctamente. Las sesiones abiertas en otros dispositivos se cerrarán.');
     } else {
       flash_add('No se pudo guardar la contraseña. Inténtalo de nuevo.', 'danger');
     }
