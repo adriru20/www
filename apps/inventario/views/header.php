@@ -2,7 +2,7 @@
 <div class="page-header">
   <h1 class="h3">📦 Inventario <span class="count-pill"><?= (int) $count ?></span></h1>
   <div class="d-flex gap-2 flex-wrap">
-    <?php if ($tab === 'objetos'): ?>
+    <?php if ($tab === 'objetos' || $tab === 'resumen'): ?>
       <button class="btn btn-primary" type="button" data-inv-new="obj"><i class="fa-solid fa-plus"></i> Añadir objeto</button>
     <?php elseif ($tab === 'localizaciones'): ?>
       <button class="btn btn-primary" type="button" data-inv-new="loc"><i class="fa-solid fa-plus"></i> Añadir localización</button>
@@ -21,8 +21,8 @@
 <?php endforeach; ?>
 
 <ul class="nav nav-tabs inv-tabs mb-3">
-  <?php foreach (['objetos' => ['Colección', 'fa-boxes-stacked'], 'localizaciones' => ['Localizaciones', 'fa-location-dot'],
-                  'imagenes' => ['Imágenes', 'fa-images'], 'resumen' => ['Resumen', 'fa-chart-pie']] as $key => [$label, $icon]): ?>
+  <?php foreach (['resumen' => ['Resumen', 'fa-chart-pie'], 'objetos' => ['Colección', 'fa-boxes-stacked'],
+                  'localizaciones' => ['Localizaciones', 'fa-location-dot'], 'imagenes' => ['Imágenes', 'fa-images']] as $key => [$label, $icon]): ?>
     <li class="nav-item">
       <a class="nav-link <?= $tab === $key ? 'active' : '' ?>" href="?tab=<?= $key ?>"><i class="fa-solid <?= $icon ?>"></i> <?= $label ?></a>
     </li>
