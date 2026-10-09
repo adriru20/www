@@ -35,3 +35,38 @@
 }
 .preview-img { width: 45px; }
 .preview-loc { width: 60px; }
+
+/* ---------- Pantalla de inventario (rediseño) ---------- */
+.count-pill {
+  font-size: .85rem; font-weight: 600; vertical-align: middle;
+  padding: .15rem .6rem; border-radius: 999px; margin-left: .4rem;
+  background: rgba(255, 51, 133, .15); color: var(--brand-pink);
+}
+.inv-tabs { border-bottom-color: var(--surface-4); flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
+.inv-tabs .nav-link { color: var(--text-muted); white-space: nowrap; border: 0; border-bottom: 2px solid transparent; border-radius: 0; font-weight: 600; }
+.inv-tabs .nav-link:hover { color: #fff; }
+.inv-tabs .nav-link.active { color: #fff; background: transparent; border-bottom-color: var(--brand-pink); }
+.inv-tabs .nav-link i { margin-right: .25rem; }
+
+.memento-card { position: relative; background: var(--surface-3); overflow: hidden; }
+.memento-card.no-lift:hover { transform: none; cursor: default; box-shadow: none; border-color: var(--surface-4); }
+.memento-card:focus-visible { outline: 2px solid var(--brand-pink); outline-offset: 2px; }
+.badge-loc-chip { background: rgba(0, 0, 0, .75); border: 1px solid #555; color: #eee; font-weight: 500; font-size: .68rem; }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
+
+.game-box { background: rgba(255, 255, 255, .04); border: 1px solid var(--surface-4); border-radius: .6rem; padding: .6rem; }
+.tag-btn.bg-primary { color: #fff; }
+
+/* Resumen */
+.stat-card { display: block; padding: 1.1rem 1.25rem; background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: var(--radius); color: var(--text-main); height: 100%; }
+a.stat-card:hover { border-color: var(--brand-pink); color: var(--text-main); }
+.stat-num { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+.stat-label { color: var(--text-muted); font-size: .85rem; }
+.stat-row { margin-bottom: .6rem; }
+.stat-bar { height: 6px; background: var(--surface-4); border-radius: 99px; overflow: hidden; margin-top: .2rem; }
+.stat-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--brand-pink), var(--brand-blue)); border-radius: 99px; }
+
+/* Las etiquetas de las tarjetas no deben pisarse en pantallas estrechas */
+.memento-card > .position-absolute { max-width: 50%; }
+.memento-card > .position-absolute .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
