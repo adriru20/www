@@ -38,8 +38,8 @@ ALTER TABLE login_user
 -- (Sin esto nadie podría entrar en el panel de Usuarios.)
 UPDATE login_user SET permission = 'admin' WHERE user = 'adriru';
 
--- El índice pk_login_user repite la clave primaria (si no existe en tu base de datos, ignora el error de esta línea)
--- ALTER TABLE login_user DROP INDEX pk_login_user;
+-- El índice pk_login_user repite la clave primaria (confirmado en tu diagnóstico): se elimina.
+ALTER TABLE login_user DROP INDEX pk_login_user;
 
 -- ---------------------------------------------------------------- 2. Permisos
 -- perm = 'wiki' | 'parking' | 'giftlist' | 'inventario' | 'inventario.add' | '.edit' | '.delete' | '.backup'
@@ -82,6 +82,9 @@ UPDATE inv_objetos SET duracion = CASE
     ELSE NULL END;
 
 -- ---------------------------------------------------------------- 4. Inventario: tipos, fechas e índices
+-- fk_loc_obj es un índice sobrante de una clave antigua sobre el texto de localización (ya no hay clave foránea).
+ALTER TABLE inv_objetos DROP INDEX fk_loc_obj;
+
 ALTER TABLE inv_objetos
   MODIFY cantidad        INT UNSIGNED NOT NULL DEFAULT 1,
   MODIFY precio_de_venta DECIMAL(10,2) NOT NULL DEFAULT 0.00,
