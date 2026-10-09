@@ -24,6 +24,16 @@ if (!inv_schema_ready()) inv_migration_page();
 $perm = ['add' => has_perm('inventario.add'), 'edit' => has_perm('inventario.edit'),
          'delete' => has_perm('inventario.delete'), 'backup' => has_perm('inventario.backup')];
 
+// Contenido de una localización (JSON para el panel «qué hay aquí»)
+if (($_GET['ajax'] ?? '') === 'loc_objs') {
+  header('Content-Type: application/json; charset=utf-8');
+  header('Cache-Control: no-store');
+  $loc = inv_loc_get((int) ($_GET['id'] ?? 0));
+  if (!$loc) { http_response_code(404); echo json_encode(['error' => 'No existe esa localización.']); exit; }
+  echo json_encode(['loc' => $loc, 'objs' => inv_objects_in_location_rows((int) $loc['id'])], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+  exit;
+}
+
 inv_handle_actions();   // POST: guarda/borra y redirige
 
 // ---------------------------------------------------------------- Datos de la pestaña
@@ -95,6 +105,7 @@ $page_scripts = ['/apps/inventario/inventario.js'];
   include __DIR__ . '/views/datalists.php';
   include __DIR__ . '/views/modal_objeto.php';
   include __DIR__ . '/views/modal_localizacion.php';
+  include __DIR__ . '/views/modal_loc_objetos.php';
   include __DIR__ . '/views/modals_comunes.php';
   ?>
   <script type="application/json" id="inv-data"><?= json_encode($data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?></script>

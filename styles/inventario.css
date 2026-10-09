@@ -66,3 +66,14 @@ a.stat-card:hover { border-color: var(--brand-pink); color: var(--text-main); tr
 .memento-card > .position-absolute { max-width: 50%; }
 .memento-card > .position-absolute .badge { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 575.98px) { .stat-num { font-size: 1.55rem; white-space: nowrap; } }
+
+/* Panel «qué hay en esta localización» */
+.loc-objs-dialog { max-width: 460px; }
+.loc-objs-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+.loc-obj { display: flex; flex-direction: column; gap: .2rem; padding: .35rem; text-align: center; color: inherit; cursor: pointer;
+  background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: .5rem; transition: border-color .15s, transform .15s; }
+.loc-obj:hover, .loc-obj:focus-visible { border-color: var(--brand-pink); transform: translateY(-2px); outline: none; }
+.loc-obj img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: .35rem; background: var(--surface-4); }
+.loc-obj-name { font-size: .78rem; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+.loc-obj-kind { font-size: .66rem; color: var(--bs-secondary-color, #8a94a0); }
+.min-w-0 { min-width: 0; }
