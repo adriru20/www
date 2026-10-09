@@ -1,12 +1,8 @@
 <?php
 // Barra de navegación común. Requiere bootstrap.php (sesión).
-$nav_items = [
-  ['/',                  'Inicio',     'fa-house'],
-  ['/apps/wiki/',        'Wiki',       'fa-book-open'],
-  ['/apps/parking/',     'Parking',    'fa-car'],
-  ['/apps/giftlist/',    'Gift list',  'fa-gift'],
-  ['/apps/inventario/',  'Inventario', 'fa-boxes-stacked'],
-];
+$nav_items = [['/', 'Inicio', 'fa-house']];
+foreach (allowed_apps() as $key => $app) $nav_items[] = [$app['href'], $app['label'], $app['icon']];
+if (is_logged_in() && is_admin()) $nav_items[] = ['/src/admin/', 'Usuarios', 'fa-users-gear'];
 $current_path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $is_active = fn(string $href) => $href === '/' ? $current_path === '/' || $current_path === '/index.php'
                                                 : str_starts_with($current_path, $href);

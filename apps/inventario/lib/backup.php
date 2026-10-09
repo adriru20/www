@@ -11,8 +11,9 @@ function inv_csv_localizaciones($out): void {
 function inv_csv_objetos($out): void {
   fputcsv($out, ['portada_http', 'objeto', 'objeto_v2', 'objeto_v3', 'localizacion', 'descripcion', 'tipo', 'tipo_de_objeto', 'cantidad',
                  'generos', 'plataformas', 'anio_de_estreno', 'formato', 'precio_de_venta', 'duracion', 'formato_de_archivo', 'en_la_caja']);
+  $locsOf = inv_locations_of();
   foreach (inv_rows(inv_query('SELECT * FROM inv_objetos ORDER BY id ASC')) as $r) {
-    fputcsv($out, [basename($r['portada_http'] ?? ''), $r['objeto'] ?? '', '', '', $r['localizacion'] ?? '', $r['descripcion'] ?? '',
+    fputcsv($out, [basename($r['portada_http'] ?? ''), $r['objeto'] ?? '', '', '', implode(', ', $locsOf[(int) $r['id']] ?? []), $r['descripcion'] ?? '',
                    $r['tipo'] ?? '', $r['tipo_de_objeto'] ?? '', $r['cantidad'] ?? 1, $r['generos'] ?? '', $r['plataformas'] ?? '',
                    $r['anio_de_estreno'] ?? '', $r['formato'] ?? '', $r['precio_de_venta'] ?? '0.00', $r['duracion'] ?? '',
                    $r['formato_de_archivo'] ?? '', $r['en_la_caja'] ?? 0]);

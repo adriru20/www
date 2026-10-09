@@ -12,10 +12,9 @@ function out(array $data, int $code = 200): void {
   exit;
 }
 
-if (!is_logged_in()) out(['ok' => false, 'error' => 'no_session'], 401);
-
 require_once __DIR__ . '/../../backend/config/db.php';
 global $conn;
+require_app_api('parking');
 $uid = (string) $_SESSION['user_id'];
 
 const PARK_HISTORY_KEEP = 30;

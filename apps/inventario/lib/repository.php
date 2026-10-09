@@ -49,19 +49,22 @@ function inv_obj_list(array $f, int $page, int $size = INV_PAGE_SIZE): array {
   $where = []; $types = ''; $params = [];
   if ($f['q'] !== '') {
     $like = '%' . $f['q'] . '%';
-    $where[] = '(objeto LIKE ? OR descripcion LIKE ? OR plataformas LIKE ? OR localizacion LIKE ? OR tipo_de_objeto LIKE ?)';
+    $where[] = '(objeto LIKE ? OR descripcion LIKE ? OR plataformas LIKE ? OR tipo_de_objeto LIKE ?
+                 OR EXISTS (SELECT 1 FROM inv_objeto_localizacion j JOIN inv_localizaciones l ON l.id = j.localizacion_id
+                            WHERE j.objeto_id = inv_objetos.id AND l.nombre LIKE ?))';
     $types .= 'sssss'; array_push($params, $like, $like, $like, $like, $like);
   }
   if ($f['f_loc']) {
-    $or = [];
-    foreach ($f['f_loc'] as $loc) { $or[] = 'localizacion LIKE ?'; $types .= 's'; $params[] = '%' . $loc . '%'; }
-    $where[] = '(' . implode(' OR ', $or) . ')';
+    $in = implode(',', array_fill(0, count($f['f_loc']), '?'));
+    $where[] = "EXISTS (SELECT 1 FROM inv_objeto_localizacion j JOIN inv_localizaciones l ON l.id = j.localizacion_id
+                        WHERE j.objeto_id = inv_objetos.id AND l.nombre IN ($in))";
+    $types .= str_repeat('s', count($f['f_loc'])); array_push($params, ...$f['f_loc']);
   }
   if ($f['f_tipo'] !== '') { $where[] = 'tipo = ?'; $types .= 's'; $params[] = $f['f_tipo']; }
   if ($f['f_cat'] !== '')  { $where[] = 'tipo_de_objeto = ?'; $types .= 's'; $params[] = $f['f_cat']; }
   if ($f['ver'] === 'venta')     $where[] = 'CAST(precio_de_venta AS DECIMAL(10,2)) > 0';
   if ($f['ver'] === 'sin_foto')  $where[] = "(portada_http IS NULL OR portada_http = '')";
-  if ($f['ver'] === 'sin_loc')   $where[] = "(localizacion IS NULL OR localizacion = '')";
+  if ($f['ver'] === 'sin_loc')   $where[] = 'NOT EXISTS (SELECT 1 FROM inv_objeto_localizacion j WHERE j.objeto_id = inv_objetos.id)';
   $w = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
   $order = match ($f['sort']) {
@@ -76,11 +79,74 @@ function inv_obj_list(array $f, int $page, int $size = INV_PAGE_SIZE): array {
   $page = min(max(1, $page), $pages);
   $offset = ($page - 1) * $size;
   $rows = inv_rows(inv_query("SELECT * FROM inv_objetos $w $order LIMIT $offset, $size", $types, $params));
+  inv_attach_locations($rows);
   return ['rows' => $rows, 'total' => $total, 'pages' => $pages, 'page' => $page];
 }
 
 function inv_obj_get(int $id): ?array {
-  return inv_query('SELECT * FROM inv_objetos WHERE id = ?', 'i', [$id])->fetch_assoc() ?: null;
+  $o = inv_query('SELECT * FROM inv_objetos WHERE id = ?', 'i', [$id])->fetch_assoc();
+  if (!$o) return null;
+  $rows = [$o]; inv_attach_locations($rows);
+  return $rows[0];
+}
+
+// ---- Localizaciones de cada objeto (tabla de relación inv_objeto_localizacion)
+
+// Pone en cada fila el campo 'localizacion' = "Caja 1, Estantería" leído de la relación
+function inv_attach_locations(array &$rows): void {
+  if (!$rows) return;
+  $ids = array_map(fn($r) => (int) $r['id'], $rows);
+  $map = inv_locations_of($ids);
+  foreach ($rows as &$r) $r['localizacion'] = implode(', ', $map[(int) $r['id']] ?? []);
+}
+
+// [objeto_id => ['Caja 1', 'Estantería']] (todos los objetos si $ids es null)
+function inv_locations_of(?array $ids = null): array {
+  $sql = 'SELECT j.objeto_id, l.nombre FROM inv_objeto_localizacion j JOIN inv_localizaciones l ON l.id = j.localizacion_id';
+  $types = ''; $params = [];
+  if ($ids !== null) {
+    if (!$ids) return [];
+    $sql .= ' WHERE j.objeto_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')';
+    $types = str_repeat('i', count($ids)); $params = array_values($ids);
+  }
+  $map = [];
+  foreach (inv_rows(inv_query($sql . ' ORDER BY l.nombre', $types, $params)) as $r) $map[(int) $r['objeto_id']][] = $r['nombre'];
+  return $map;
+}
+
+// id de una localización por nombre; si no existe se crea (así nunca quedan nombres sueltos)
+function inv_location_id(string $nombre, bool $create = true): ?int {
+  $nombre = trim($nombre);
+  if ($nombre === '') return null;
+  $r = inv_query('SELECT id FROM inv_localizaciones WHERE LOWER(nombre) = LOWER(?)', 's', [$nombre]);
+  if ($r && ($row = $r->fetch_assoc())) return (int) $row['id'];
+  if (!$create) return null;
+  $x = inv_exec('INSERT INTO inv_localizaciones (nombre) VALUES (?)', 's', [$nombre]);
+  return $x['ok'] ? $x['insert_id'] : null;
+}
+
+// Sustituye las localizaciones de un objeto por la lista de nombres dada. Devuelve cuántas se han creado nuevas.
+function inv_obj_set_locations(int $objId, array $names): int {
+  $before = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0);
+  inv_exec('DELETE FROM inv_objeto_localizacion WHERE objeto_id = ?', 'i', [$objId]);
+  $done = [];
+  foreach ($names as $n) {
+    $lid = inv_location_id($n);
+    if ($lid && !isset($done[$lid])) { $done[$lid] = true; inv_exec('INSERT INTO inv_objeto_localizacion (objeto_id, localizacion_id) VALUES (?, ?)', 'ii', [$objId, $lid]); }
+  }
+  inv_sync_location_text([$objId]);
+  return (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0) - $before;
+}
+
+// Copia de seguridad de la relación en el texto antiguo (columna inv_objetos.localizacion):
+// la lectura usa solo la relación; el texto se mantiene por si hubiera que volver atrás.
+function inv_sync_location_text(array $objIds): void {
+  $map = inv_locations_of($objIds ?: null);
+  foreach ($objIds as $id) inv_exec('UPDATE inv_objetos SET localizacion = ? WHERE id = ?', 'si', [implode(', ', $map[(int) $id] ?? []), (int) $id]);
+}
+
+function inv_objects_in_location(int $locId): array {
+  return array_map('intval', array_column(inv_rows(inv_query('SELECT objeto_id FROM inv_objeto_localizacion WHERE localizacion_id = ?', 'i', [$locId])), 'objeto_id'));
 }
 
 // Valores únicos para desplegables y sugerencias
@@ -113,22 +179,25 @@ function inv_obj_save(array $in, string $portada, ?int $id): array {
   $cantidad = max(1, (int) ($in['cantidad'] ?? 1));
   $caja = !empty($in['en_la_caja']) ? 1 : 0;
   $precio = max(0, (float) str_replace(',', '.', (string) ($in['precio_de_venta'] ?? 0)));
-  $loc  = implode(', ', inv_split_list($in['localizacion'] ?? ''));
+  $locNames = inv_split_list($in['localizacion'] ?? '');
   $plat = implode(', ', inv_split_list($in['plataformas'] ?? ''));
   $gen  = implode(', ', inv_split_list($in['generos'] ?? ''));
   $desc = trim((string) ($in['descripcion'] ?? ''));
   $cat  = trim((string) ($in['tipo_de_objeto'] ?? ''));
   $fa   = trim((string) ($in['formato_de_archivo'] ?? ''));
 
-  $vals = [$titulo, $loc, $desc, $tipo, $cat, $plat, $portada, $cantidad, $gen, $formato, $fa, $caja, $precio];
+  $vals = [$titulo, $desc, $tipo, $cat, $plat, $portada, $cantidad, $gen, $formato, $fa, $caja, $precio];
   if ($id) {
-    $r = inv_exec('UPDATE inv_objetos SET objeto=?, localizacion=?, descripcion=?, tipo=?, tipo_de_objeto=?, plataformas=?, portada_http=?, cantidad=?, generos=?, formato=?, formato_de_archivo=?, en_la_caja=?, precio_de_venta=? WHERE id=?',
-      'sssssssisssidi', array_merge($vals, [$id]));
+    $r = inv_exec('UPDATE inv_objetos SET objeto=?, descripcion=?, tipo=?, tipo_de_objeto=?, plataformas=?, portada_http=?, cantidad=?, generos=?, formato=?, formato_de_archivo=?, en_la_caja=?, precio_de_venta=? WHERE id=?',
+      'ssssssisssidi', array_merge($vals, [$id]));
   } else {
-    $r = inv_exec('INSERT INTO inv_objetos (objeto, localizacion, descripcion, tipo, tipo_de_objeto, plataformas, portada_http, cantidad, generos, formato, formato_de_archivo, en_la_caja, precio_de_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      'sssssssisssid', $vals);
+    $r = inv_exec('INSERT INTO inv_objetos (objeto, descripcion, tipo, tipo_de_objeto, plataformas, portada_http, cantidad, generos, formato, formato_de_archivo, en_la_caja, precio_de_venta) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'ssssssisssid', $vals);
   }
-  return $r['ok'] ? [true, $id ?: $r['insert_id']] : [false, 'No se pudo guardar el objeto.'];
+  if (!$r['ok']) return [false, 'No se pudo guardar el objeto.'];
+  $objId = $id ?: $r['insert_id'];
+  $created = inv_obj_set_locations((int) $objId, $locNames);
+  return [true, $objId, $created];
 }
 
 function inv_obj_delete(int $id): ?string {
@@ -179,26 +248,13 @@ function inv_loc_list(array $f, int $page, int $size = INV_PAGE_SIZE): array {
 // Cuántos objetos hay en cada localización: ['Caja 1' => 5, ...]
 function inv_location_usage(): array {
   $use = [];
-  foreach (inv_rows(inv_query("SELECT localizacion FROM inv_objetos WHERE localizacion IS NOT NULL AND localizacion != ''")) as $r)
-    foreach (inv_split_list($r['localizacion']) as $l) $use[$l] = ($use[$l] ?? 0) + 1;
+  foreach (inv_rows(inv_query('SELECT l.nombre, COUNT(*) AS n FROM inv_objeto_localizacion j JOIN inv_localizaciones l ON l.id = j.localizacion_id GROUP BY l.id, l.nombre')) as $r)
+    $use[$r['nombre']] = (int) $r['n'];
   return $use;
 }
 
 function inv_loc_get(int $id): ?array {
   return inv_query('SELECT * FROM inv_localizaciones WHERE id = ?', 'i', [$id])->fetch_assoc() ?: null;
-}
-
-// Si se renombra una localización, los objetos que la usan deben seguirla
-function inv_loc_rename_in_objects(string $old, string $new): int {
-  $n = 0;
-  foreach (inv_rows(inv_query('SELECT id, localizacion FROM inv_objetos WHERE localizacion LIKE ?', 's', ['%' . $old . '%'])) as $o) {
-    $list = inv_split_list($o['localizacion']);
-    if (!in_array($old, $list, true)) continue;
-    $list = array_map(fn($l) => $l === $old ? $new : $l, $list);
-    inv_exec('UPDATE inv_objetos SET localizacion = ? WHERE id = ?', 'si', [implode(', ', array_unique($list)), (int) $o['id']]);
-    $n++;
-  }
-  return $n;
 }
 
 // Devuelve [true, id, nº de objetos actualizados] o [false, error]
@@ -215,7 +271,11 @@ function inv_loc_save(array $in, string $foto, ?int $id): array {
   if ($id) {
     $old = inv_loc_get($id);
     $r = inv_exec('UPDATE inv_localizaciones SET nombre=?, descripcion_del_contenido=?, categoria=?, foto_http=? WHERE id=?', 'ssssi', [$nombre, $desc, $cat, $foto, $id]);
-    if ($r['ok'] && $old && $old['nombre'] !== $nombre) $moved = inv_loc_rename_in_objects($old['nombre'], $nombre);
+    if ($r['ok'] && $old && $old['nombre'] !== $nombre) { // los objetos siguen enlazados por id; solo se refresca el texto de copia
+      $affected = inv_objects_in_location($id);
+      inv_sync_location_text($affected);
+      $moved = count($affected);
+    }
   } else {
     $r = inv_exec('INSERT INTO inv_localizaciones (nombre, descripcion_del_contenido, categoria, foto_http) VALUES (?, ?, ?, ?)', 'ssss', [$nombre, $desc, $cat, $foto]);
   }
@@ -225,14 +285,18 @@ function inv_loc_save(array $in, string $foto, ?int $id): array {
 function inv_loc_delete(int $id): ?array {
   $l = inv_loc_get($id);
   if (!$l) return null;
+  $affected = inv_objects_in_location($id);
+  inv_exec('DELETE FROM inv_objeto_localizacion WHERE localizacion_id = ?', 'i', [$id]);
   inv_exec('DELETE FROM inv_localizaciones WHERE id = ?', 'i', [$id]);
-  return ['nombre' => $l['nombre'], 'objetos' => inv_location_usage()[$l['nombre']] ?? 0];
+  inv_sync_location_text($affected);
+  return ['nombre' => $l['nombre'], 'objetos' => count($affected)];
 }
 
 // ---------------------------------------------------------------- RESUMEN
 
 function inv_stats(): array {
-  $rows = inv_rows(inv_query('SELECT id, objeto, localizacion, tipo, tipo_de_objeto, cantidad, portada_http, precio_de_venta FROM inv_objetos'));
+  $rows = inv_rows(inv_query('SELECT id, objeto, tipo, tipo_de_objeto, cantidad, portada_http, precio_de_venta FROM inv_objetos'));
+  $locsOf = inv_locations_of();
   $s = ['objetos' => count($rows), 'unidades' => 0, 'por_tipo' => [], 'por_cat' => [], 'por_loc' => [],
         'sin_foto' => 0, 'sin_loc' => 0, 'venta_n' => 0, 'venta_total' => 0.0, 'localizaciones' => 0];
   foreach ($rows as $r) {
@@ -242,7 +306,7 @@ function inv_stats(): array {
     $s['por_tipo'][$tipo] = ($s['por_tipo'][$tipo] ?? 0) + 1;
     if (($r['tipo_de_objeto'] ?? '') !== '') $s['por_cat'][$r['tipo_de_objeto']] = ($s['por_cat'][$r['tipo_de_objeto']] ?? 0) + 1;
     if (trim((string) $r['portada_http']) === '') $s['sin_foto']++;
-    $locs = inv_split_list($r['localizacion']);
+    $locs = $locsOf[(int) $r['id']] ?? [];
     if (!$locs) $s['sin_loc']++;
     foreach ($locs as $l) $s['por_loc'][$l] = ($s['por_loc'][$l] ?? 0) + 1;
     $p = (float) $r['precio_de_venta'];
@@ -251,4 +315,34 @@ function inv_stats(): array {
   arsort($s['por_tipo']); arsort($s['por_cat']); arsort($s['por_loc']);
   $s['localizaciones'] = (int) (inv_query('SELECT COUNT(*) AS n FROM inv_localizaciones')->fetch_assoc()['n'] ?? 0);
   return $s;
+}
+
+// ---------------------------------------------------------------- ESQUEMA
+
+// ¿Está creada la tabla de relación objeto-localización? (la crea el SQL de migración)
+function inv_schema_ready(): bool {
+  return inv_query('SELECT 1 FROM inv_objeto_localizacion LIMIT 1') !== false;
+}
+
+// Si falta el SQL de migración se muestra este aviso en vez de fallar a medias
+function inv_migration_page(): void {
+  global $src;
+  http_response_code(503);
+  $page_title = 'Inventario';
+  ?>
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="dark">
+<?php include __DIR__ . '/../../../backend/config/ini.php'; ?>
+<body>
+  <?php include __DIR__ . '/../../../frontend/menu.php'; ?>
+  <main class="auth-wrap"><div class="card shadow auth-card text-center" style="max-width:560px">
+    <h1 class="h4">Falta actualizar la base de datos</h1>
+    <p class="text-muted mb-2">El inventario necesita ejecutar el SQL de migración (tabla de localizaciones separadas).</p>
+    <p class="small text-muted mb-0">Ejecuta <code>backend/database/migraciones/002_roles_y_mejoras.sql</code> en phpMyAdmin y recarga esta página.</p>
+  </div></main>
+  <?php include __DIR__ . '/../../../frontend/footer.php'; ?>
+</body>
+</html>
+<?php
+  exit();
 }

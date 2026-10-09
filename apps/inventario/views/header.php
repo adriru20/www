@@ -2,14 +2,16 @@
 <div class="page-header">
   <h1 class="h3">📦 Inventario <span class="count-pill"><?= (int) $count ?></span></h1>
   <div class="d-flex gap-2 flex-wrap">
-    <?php if ($tab === 'objetos' || $tab === 'resumen'): ?>
+    <?php if (($tab === 'objetos' || $tab === 'resumen') && $perm['add']): ?>
       <button class="btn btn-primary" type="button" data-inv-new="obj"><i class="fa-solid fa-plus"></i> Añadir objeto</button>
-    <?php elseif ($tab === 'localizaciones'): ?>
+    <?php elseif ($tab === 'localizaciones' && $perm['add']): ?>
       <button class="btn btn-primary" type="button" data-inv-new="loc"><i class="fa-solid fa-plus"></i> Añadir localización</button>
-    <?php elseif ($tab === 'imagenes'): ?>
+    <?php elseif ($tab === 'imagenes' && $perm['add']): ?>
       <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalUploadImg"><i class="fa-solid fa-upload"></i> Subir imágenes</button>
     <?php endif; ?>
-    <a href="csv.php" class="btn btn-outline-success" title="Copias de seguridad e importación"><i class="fa-solid fa-floppy-disk"></i> Backups</a>
+    <?php if ($perm['backup']): ?>
+      <a href="csv.php" class="btn btn-outline-success" title="Copias de seguridad e importación"><i class="fa-solid fa-floppy-disk"></i> Backups</a>
+    <?php endif; ?>
   </div>
 </div>
 

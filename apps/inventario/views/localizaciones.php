@@ -34,7 +34,7 @@
 <?php if (!$list['rows']): ?>
   <div class="empty-state">
     <p>No se han encontrado localizaciones.</p>
-    <button class="btn btn-primary" type="button" data-inv-new="loc">Añadir la primera</button>
+    <?php if ($perm['add']): ?><button class="btn btn-primary" type="button" data-inv-new="loc">Añadir la primera</button><?php endif; ?>
   </div>
 <?php else: ?>
   <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">

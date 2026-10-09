@@ -1,9 +1,6 @@
 <?php
-require_once __DIR__ . '/../../../backend/config/session.php';
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    exit('No autorizado.');
-}
+require_once __DIR__ . '/../../../backend/config/bootstrap.php';
+require_app_api('wiki');
 
 $file = (string)($_GET['file'] ?? '');
 $baseDir = realpath(__DIR__ . '/../vault');

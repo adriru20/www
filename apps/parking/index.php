@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../backend/config/bootstrap.php';
-require_login();
+require_app('parking');
 $page_title   = 'Parking';
 $page_styles  = ['/js/vendor/leaflet/leaflet.css', '/styles/parking.css'];
 $page_scripts = ['/js/vendor/leaflet/leaflet.js', '/apps/parking/parking.js'];

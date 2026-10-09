@@ -11,7 +11,7 @@
 <?php if (!$list['rows']): ?>
   <div class="empty-state">
     <p>No hay imágenes.</p>
-    <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalUploadImg">Subir imágenes</button>
+    <?php if ($perm['add']): ?><button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#modalUploadImg">Subir imágenes</button><?php endif; ?>
   </div>
 <?php else: ?>
   <div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">
@@ -26,10 +26,10 @@
           <div class="card-body p-2 text-center">
             <div class="small text-truncate mb-2" title="<?= h($name) ?>"><?= h($name) ?></div>
             <div class="d-flex gap-1 justify-content-center">
-              <button type="button" class="btn btn-sm btn-outline-primary" data-rename-img="<?= h($name) ?>" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
-              <button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
+              <?php if ($perm['edit']): ?><button type="button" class="btn btn-sm btn-outline-primary" data-rename-img="<?= h($name) ?>" title="Renombrar"><i class="fa-solid fa-pen"></i></button><?php endif; ?>
+              <?php if ($perm['delete']): ?><button type="button" class="btn btn-sm btn-outline-danger" title="Eliminar"
                       data-confirm="delete_img" data-name="<?= h($name) ?>" data-label="la imagen «<?= h($name) ?>»"
-                      data-warn="<?= $n ? "Está usada en $n elemento(s): se quedarán sin foto." : '' ?>"><i class="fa-solid fa-trash"></i></button>
+                      data-warn="<?= $n ? "Está usada en $n elemento(s): se quedarán sin foto." : '' ?>"><i class="fa-solid fa-trash"></i></button><?php endif; ?>
             </div>
           </div>
         </div>
