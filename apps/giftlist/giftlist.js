@@ -3,6 +3,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const DATA = JSON.parse(($('gift-data') || {}).textContent || '{}');
+  const OWNER = ($('modalDeleteGift') || { dataset: {} }).dataset.ownerName || '';   // vacío en mi propia lista
 
   // Buscador instantáneo + filtro por estado (Todos / Pendientes / Comprados)
   const search = $('giftSearch');
@@ -42,7 +43,7 @@
     const del = e.target.closest('[data-gift-delete]');
     if (del) {
       $('d_id').value = del.dataset.giftDelete;
-      $('d_text').textContent = '¿Eliminar «' + del.dataset.name + '» de tu lista?';
+      $('d_text').textContent = '¿Eliminar «' + del.dataset.name + '» de ' + (OWNER ? 'la lista de ' + OWNER : 'tu lista') + '?';
       bootstrap.Modal.getOrCreateInstance($('modalDeleteGift')).show();
     }
   });

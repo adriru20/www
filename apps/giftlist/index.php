@@ -19,6 +19,7 @@ if (!$owner) {                 // lista de un usuario que no existe
 }
 
 $people = gift_people($my_id);
+$can_write = $is_mine || gift_can_manage();            // añadir/editar/borrar en esta lista
 $show_buy = !$is_mine && gift_purchase_ready();       // botones de "comprado" (solo en listas ajenas)
 $gifts    = gift_list($view_id, $show_buy);
 $n_bought = $show_buy ? count(array_filter($gifts, fn($g) => $g['purchased_by'] !== null)) : 0;
@@ -59,23 +60,24 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
         <?= $is_mine ? 'Mis regalos' : 'Regalos de <span class="text-gradient">' . e($owner['user']) . '</span>' ?>
         <span class="count-pill" id="giftCount"><?= count($gifts) ?></span>
       </h2>
-      <?php if ($is_mine): ?>
+      <?php if ($can_write): ?>
         <button class="btn btn-accent" type="button" data-bs-toggle="collapse" data-bs-target="#addGift" aria-expanded="false" aria-controls="addGift">
           <i class="fa-solid fa-plus"></i> Añadir regalo
         </button>
       <?php endif; ?>
     </div>
 
-    <?php if ($is_mine): ?>
+    <?php if ($can_write): ?>
       <div class="collapse mb-4" id="addGift">
         <div class="card"><div class="card-body">
           <form action="index.php" method="POST">
             <?= csrf_input() ?>
             <input type="hidden" name="action" value="add_item">
+            <input type="hidden" name="owner" value="<?= e($view_id) ?>">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label text-muted small mb-1" for="g_name">Nombre del regalo *</label>
-                <input type="text" id="g_name" name="item_name" class="form-control" maxlength="255" required placeholder="Qué te gustaría recibir">
+                <input type="text" id="g_name" name="item_name" class="form-control" maxlength="255" required placeholder="<?= $is_mine ? 'Qué te gustaría recibir' : 'Qué le gustaría recibir' ?>">
               </div>
               <div class="col-md-6">
                 <label class="form-label text-muted small mb-1" for="g_url">Enlace (opcional)</label>
@@ -87,7 +89,7 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
               </div>
               <div class="col-12 text-end">
                 <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#addGift">Cancelar</button>
-                <button type="submit" class="btn btn-accent">Guardar en mi lista</button>
+                <button type="submit" class="btn btn-accent"><?= $is_mine ? 'Guardar en mi lista' : 'Guardar en la lista de ' . e($owner['user']) ?></button>
               </div>
             </div>
           </form>
@@ -145,7 +147,7 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
                       <small class="opacity-75">· <?= e(preg_replace('/^www\./', '', (string) parse_url($g['item_url'], PHP_URL_HOST))) ?></small>
                     </a>
                   <?php endif; ?>
-                  <?php if ($is_mine): ?>
+                  <?php if ($can_write): ?>
                     <button type="button" class="btn btn-sm btn-outline-secondary ms-auto" data-gift-edit="<?= (int) $g['id'] ?>" title="Editar"><i class="fa-solid fa-pen"></i> Editar</button>
                     <button type="button" class="btn btn-sm btn-outline-danger" data-gift-delete="<?= (int) $g['id'] ?>" data-name="<?= e($g['item_name']) ?>" title="Eliminar"><i class="fa-solid fa-trash"></i></button>
                   <?php endif; ?>
@@ -159,18 +161,19 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
     <?php else: ?>
       <div class="empty-state">
         <p><?= $is_mine ? 'Todavía no has añadido ningún regalo.' : e($owner['user']) . ' todavía no ha añadido regalos.' ?></p>
-        <?php if ($is_mine): ?><button class="btn btn-accent" type="button" data-bs-toggle="collapse" data-bs-target="#addGift">Añadir el primero</button><?php endif; ?>
+        <?php if ($can_write): ?><button class="btn btn-accent" type="button" data-bs-toggle="collapse" data-bs-target="#addGift">Añadir el primero</button><?php endif; ?>
       </div>
     <?php endif; ?>
   </main>
 
-  <?php if ($is_mine): ?>
+  <?php if ($can_write): ?>
     <!-- Editar regalo -->
     <div class="modal fade" id="modalEditGift" tabindex="-1" aria-labelledby="modalEditGiftTitle" aria-hidden="true">
       <div class="modal-dialog">
         <form class="modal-content" method="POST" action="index.php">
           <?= csrf_input() ?>
           <input type="hidden" name="action" value="edit_item">
+          <input type="hidden" name="owner" value="<?= e($view_id) ?>">
           <input type="hidden" name="id" id="e_id">
           <div class="modal-header"><h5 class="modal-title fs-6" id="modalEditGiftTitle">Editar regalo</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>
@@ -189,11 +192,12 @@ foreach ($gifts as $g) $gift_data[$g['id']] = ['name' => $g['item_name'], 'desc'
     </div>
 
     <!-- Confirmar borrado -->
-    <div class="modal fade" id="modalDeleteGift" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalDeleteGift" tabindex="-1" aria-hidden="true" data-owner-name="<?= $is_mine ? '' : e($owner['user']) ?>">
       <div class="modal-dialog modal-dialog-centered modal-sm">
         <form class="modal-content" method="POST" action="index.php">
           <?= csrf_input() ?>
           <input type="hidden" name="action" value="delete_item">
+          <input type="hidden" name="owner" value="<?= e($view_id) ?>">
           <input type="hidden" name="id" id="d_id">
           <div class="modal-body text-center pt-4">
             <p class="mb-0" id="d_text">¿Eliminar este regalo?</p>

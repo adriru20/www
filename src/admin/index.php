@@ -62,13 +62,13 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
                     if (!$any): ?><span class="chip chip-warn">Sin acceso a ninguna sección</span><?php endif;
                   endif; ?>
                 </div>
-                <?php if ($u['permission'] !== 'admin' && in_array('inventario', $u['perms'], true)): ?>
-                  <p class="small text-muted mt-2 mb-0">Inventario:
-                    <?php foreach ($registry['inventario']['subs'] as $sub => $label): ?>
-                      <span class="<?= in_array("inventario.$sub", $u['perms'], true) ? 'text-success' : 'text-decoration-line-through opacity-50' ?>"><?= e(explode(',', $label)[0]) ?></span><?= $sub !== 'backup' ? ' · ' : '' ?>
+                <?php if ($u['permission'] !== 'admin'): foreach ($registry as $key => $app): if (!$app['subs'] || !in_array($key, $u['perms'], true)) continue; $subKeys = array_keys($app['subs']); $last = end($subKeys); ?>
+                  <p class="small text-muted mt-2 mb-0"><?= e($app['label']) ?>:
+                    <?php foreach ($app['subs'] as $sub => $label): ?>
+                      <span class="<?= in_array("$key.$sub", $u['perms'], true) ? 'text-success' : 'text-decoration-line-through opacity-50' ?>"><?= e(explode(',', $label)[0]) ?></span><?= $sub !== $last ? ' · ' : '' ?>
                     <?php endforeach; ?>
                   </p>
-                <?php endif; ?>
+                <?php endforeach; endif; ?>
                 <div class="spot-actions">
                   <button class="btn btn-sm btn-primary" type="button" data-user-edit="<?= e($u['id']) ?>"><i class="fa-solid fa-sliders"></i> Rol y secciones</button>
                   <button class="btn btn-sm btn-outline-secondary" type="button" data-user-pass="<?= e($u['id']) ?>"><i class="fa-solid fa-key"></i> Contraseña</button>
