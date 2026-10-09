@@ -46,6 +46,11 @@ jobs:
             echo "SFTP_STRICT=no" >> "$GITHUB_ENV"
           fi
 
+      # Fichero público con la versión desplegada: https://www.adriru.es/version.txt
+      - name: Generar version.txt
+        run: |
+          printf 'commit: %s\ndesplegado: %s\n' "$GITHUB_SHA" "$(date -u +'%Y-%m-%d %H:%M:%S UTC')" > version.txt
+
       - name: Sincronizar vía SFTP
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -71,3 +76,25 @@ jobs:
             ./ /homepages/28/d1007113302/htdocs/www/
           bye
           "
+
+      # Diagnóstico: enseña en el log dónde ha escrito realmente la subida
+      - name: Verificar destino
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          FTP_HOST: ${{ secrets.FTP_SERVER }}
+        run: |
+          if [ "$SFTP_STRICT" = "no" ]; then
+            AUTOCONFIRM="set sftp:auto-confirm yes"
+          else
+            AUTOCONFIRM="set sftp:connect-program \"ssh -a -x -o StrictHostKeyChecking=yes\""
+          fi
+          lftp -c "
+          $AUTOCONFIRM
+          open sftp://$FTP_HOST
+          user $FTP_USER \"$FTP_PASS\"
+          pwd
+          cls -l /homepages/28/d1007113302/htdocs/www/version.txt
+          cls -l /homepages/28/d1007113302/htdocs/www/apps/giftlist/lib.php
+          bye
+          " || true
