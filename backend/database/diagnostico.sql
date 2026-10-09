@@ -4,7 +4,7 @@
 
 -- 1) Qué tablas hay, motor y colación
 SELECT TABLE_NAME, ENGINE, TABLE_COLLATION, TABLE_ROWS
-FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() ORDER BY TABLE_NAME;
+FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'dbs13691268' ORDER BY TABLE_NAME;
 
 -- 2) Estructura real de cada tabla (copia la columna "Create Table" de cada una)
 SHOW CREATE TABLE login_user;

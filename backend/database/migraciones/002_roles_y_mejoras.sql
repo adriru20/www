@@ -34,6 +34,10 @@ ALTER TABLE login_user
   ADD COLUMN last_login DATETIME   NULL,
   ADD UNIQUE KEY uq_login_user_user (user);
 
+-- Tu usuario figuraba con rol "user" en la base de datos: se le da el rol de administrador.
+-- (Sin esto nadie podría entrar en el panel de Usuarios.)
+UPDATE login_user SET permission = 'admin' WHERE user = 'adriru';
+
 -- El índice pk_login_user repite la clave primaria (si no existe en tu base de datos, ignora el error de esta línea)
 -- ALTER TABLE login_user DROP INDEX pk_login_user;
 
@@ -47,7 +51,7 @@ CREATE TABLE user_permissions (
   PRIMARY KEY (user_id, perm)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- Para que nadie se quede sin acceso de golpe, los usuarios con rol "user" conservan todo lo que ven hoy.
+-- Para que nadie se quede sin acceso de golpe, los usuarios con rol "user" (ahora: roro) conservan todo lo que ven hoy.
 -- Después, entra en Usuarios y ajusta (por ejemplo, pon a roro como "Visitante" y marca solo lo que quieras).
 INSERT INTO user_permissions (user_id, perm)
 SELECT u.id, p.perm
@@ -142,3 +146,6 @@ UNION ALL SELECT 'permisos', COUNT(*) FROM user_permissions;
 SELECT o.id, o.objeto, o.localizacion FROM inv_objetos o
 WHERE o.localizacion IS NOT NULL AND o.localizacion <> ''
   AND NOT EXISTS (SELECT 1 FROM inv_objeto_localizacion j WHERE j.objeto_id = o.id);
+
+-- Debe salir al menos un administrador (adriru):
+SELECT user, permission, active FROM login_user ORDER BY permission, user;
