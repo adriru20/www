@@ -2,7 +2,7 @@
 // Barra de navegación común. Requiere bootstrap.php (sesión).
 $nav_items = [['/', 'Inicio', 'fa-house']];
 foreach (allowed_apps() as $key => $app) $nav_items[] = [$app['href'], $app['label'], $app['icon']];
-if (is_logged_in() && is_admin()) $nav_items[] = ['/src/admin/', 'Usuarios', 'fa-users-gear'];
+if (is_logged_in() && is_admin()) { $nav_items[] = ['/src/admin/', 'Usuarios', 'fa-users-gear']; $nav_items[] = ['/src/onedrive/', 'OneDrive', 'fa-cloud']; }
 if (is_logged_in()) $nav_items[] = ['/src/cuenta/', 'Mi cuenta', 'fa-user-gear'];
 $current_path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $is_active = fn(string $href) => $href === '/' ? $current_path === '/' || $current_path === '/index.php'

@@ -76,9 +76,14 @@ No se borra nada en el servidor: `db.local.php`, imágenes subidas, backups y lo
 - Subidas de imagen validadas y sin ejecución de scripts en `apps/inventario/img/`.
 - Wiki y APIs solo con sesión; registro de usuarios desactivado (`src/login/signup.php`).
 
+## Wiki desde OneDrive
+La wiki lee las notas de `apps/wiki/vault/`. Si se conecta OneDrive (Administración → OneDrive), esa carpeta se mantiene sincronizada con la del vault en
+OneDrive (solo notas `.md`, solo lectura). Código: `backend/lib/onedrive.php`; pantalla de administración: `src/onedrive/`; API: `apps/wiki/api/sync.php`.
+- Configuración (no va en Git): `backend/config/onedrive.local.php`, a partir de `onedrive.example.php` (id y secreto de la app de Azure, ruta de la carpeta).
+- Token, estado y bloqueo: `backend/onedrive/` (protegida con `.htaccess`, ignorada por Git).
+- Se actualiza sola al abrir la wiki si han pasado más de 10 minutos (o con el botón ↻). Usa la API «delta» y, si Microsoft no la admite para la carpeta, cambia sola al listado completo.
+- El despliegue **no toca** `apps/wiki/vault/` (excluido en `deploy.yml`): la fuente de verdad es OneDrive. El vault antiguo sigue en el repositorio como copia.
+
 ## Pendientes (ideas aparcadas)
-- **Wiki desde OneDrive**: ahora el vault (`apps/wiki/vault/`, ~20 MB) va en el repositorio y se despliega con él. Se quiere leerlo desde OneDrive.
-  Opciones valoradas: (1) sincronizar la carpeta de OneDrive con `/www/apps/wiki/vault/` por SFTP desde el ordenador (rclone/WinSCP) y sacar el vault
-  del repositorio y del despliegue; (2) que el servidor lea de OneDrive (enlace compartido o app de Azure); (3) seguir con GitHub (plugin Obsidian Git).
-  Pendiente de decidir según: tipo de cuenta OneDrive (personal / Microsoft 365), si se edita desde el móvil y si el ordenador está encendido.
 - Papelera de recuperación del inventario; quitar la columna antigua `inv_objetos.localizacion`; revisar la localización «•».
+- Cuando la sincronización con OneDrive lleve tiempo funcionando: sacar `apps/wiki/vault/` del repositorio (`git rm -r --cached`).
