@@ -569,65 +569,36 @@ function od_prune_untracked(): array {
 
 // Diagnóstico de la conexión (no muestra ningún secreto). Devuelve una lista de [estado 'ok'|'aviso'|'error', texto]
 function od_diagnose(): array {
-  @set_time_limit(90);
-  $t0 = microtime(true);
+  @set_time_limit(60);
   $c = od_config();
   $out = [];
-  $out[] = ['ok', 'PHP ' . PHP_VERSION . ' · cURL ' . (function_exists('curl_version') ? curl_version()['version'] . ' · ' . (curl_version()['ssl_version'] ?? '') : 'NO DISPONIBLE')];
-  if (!$c) return array_merge($out, [['error', 'Falta o está incompleto backend/config/onedrive.local.php.']]);
-  if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $c['client_id'])) $out[] = ['aviso', 'El client_id no tiene forma de «Id. de aplicación (cliente)» (debería ser un código con guiones tipo xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).'];
-  if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $c['client_secret'])) $out[] = ['aviso', 'El client_secret parece un «Id. del secreto» (un código con guiones). Hay que poner el VALOR del secreto, que es una cadena más larga y rara.'];
+  if (!$c) return [['error', 'Falta o está incompleto backend/config/onedrive.local.php.']];
+
+  // 1) Configuración
+  $uuid = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+  if (!preg_match($uuid, $c['client_id'])) $out[] = ['aviso', 'El client_id no tiene forma de «Id. de aplicación (cliente)» (un código con guiones tipo xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).'];
+  if (preg_match($uuid, $c['client_secret'])) $out[] = ['aviso', 'El client_secret parece un «Id. del secreto». Hay que poner el VALOR del secreto, que es una cadena más larga.'];
   elseif (strlen($c['client_secret']) < 20) $out[] = ['aviso', 'El client_secret es muy corto (' . strlen($c['client_secret']) . ' caracteres): ¿está completo?'];
-  else $out[] = ['ok', 'client_id y client_secret con aspecto correcto (' . strlen($c['client_secret']) . ' caracteres de secreto).'];
-  $out[] = ['ok', 'Carpeta: «' . $c['folder'] . '» · tenant: ' . $c['tenant'] . ' · redirect_uri: ' . $c['redirect_uri']];
+  else $out[] = ['ok', 'Configuración con buen aspecto · carpeta «' . $c['folder'] . '».'];
 
-  $show = fn(array $r) => 'HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($r['body'], 0, 200)))), 0, 140);
-  $proxy = array_filter([getenv('https_proxy'), getenv('HTTPS_PROXY'), getenv('http_proxy'), getenv('HTTP_PROXY')]);
-  $out[] = [$proxy ? 'aviso' : 'ok', $proxy ? 'El servidor define un proxy para las conexiones salientes: ' . preg_replace('#//[^@/]*@#', '//', implode(' · ', array_unique($proxy))) : 'Sin proxy definido en el entorno del servidor.'];
+  // 2) ¿Llega el servidor al inicio de sesión de Microsoft? (misma vía que usa la sincronización; petición con datos falsos: debe dar un error normal de Microsoft)
+  $r = od_login_http('POST', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
+  $okLogin = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
+  $tn = ['curl' => 'cURL', 'noaccept' => 'cURL sin Accept', 'stream' => 'streams de PHP'][$r['transport'] ?? 'curl'] ?? 'cURL';
+  $out[] = [$okLogin ? 'ok' : 'error', $okLogin ? 'Inicio de sesión de Microsoft alcanzable (vía: ' . $tn . ').' : 'No se llega al inicio de sesión de Microsoft: HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($r['body'], 0, 200)))), 0, 140)];
 
-  // Mismo servicio en distintas direcciones y con distintas opciones de red: así se ve qué combinación atraviesa el hosting
-  $anyOk = false;
-  foreach (od_login_aliases() as $base) {
-    foreach ([['IPv4 + HTTP/1.1', true, true], ['IPv6/auto + HTTP/2', false, false]] as [$label, $v4, $h11]) {
-      $r = od_http('GET', $base . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 6, 'v4' => $v4, 'h11' => $h11]);
-      $good = $r['code'] === 200 && !empty($r['json']['token_endpoint']);
-      $anyOk = $anyOk || $good;
-      $srv = ($r['headers']['server'] ?? '') !== '' ? ' · servidor: ' . $r['headers']['server'] : '';
-      $out[] = [$good ? 'ok' : 'error', preg_replace('#^https://#', '', $base) . ' [' . $label . '] → ' . ($good ? 'HTTP 200' : $show($r)) . ' · IP ' . ($r['ip'] ?: '—') . $srv];
-    }
-  }
-  // ¿Quién responde de verdad? Certificado, cabeceras y comparación con otros caminos y otras páginas
-  $cfgUrl = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration';
-  $hdrs = fn(array $r) => implode(' | ', array_map(fn($k, $v) => $k . ': ' . mb_substr($v, 0, 40), array_keys(array_slice($r['headers'], 0, 8, true)), array_slice($r['headers'], 0, 8, true)));
-  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'cert' => true]);
-  $out[] = [$r['code'] === 200 ? 'ok' : 'aviso', 'Certificado que recibe el servidor de login.microsoftonline.com: ' . ($r['cert'] ?? '') . ' · cabeceras: ' . ($hdrs($r) ?: 'ninguna')];
-  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'tls12' => true]);
-  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'cURL forzando TLS 1.2: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
-  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'noaccept' => true]);
-  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'cURL sin cabecera Accept: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
-  $r = od_http_stream('GET', $cfgUrl, ['timeout' => 8]);
-  $out[] = [$r['code'] === 200 && !empty($r['json']['token_endpoint']) ? 'ok' : 'error', 'Streams de PHP (GET): ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
-  $r = od_http_stream('POST', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['timeout' => 8, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
-  $okS = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
-  $out[] = [$okS ? 'ok' : 'error', 'Streams de PHP (petición de token con datos falsos, debe dar un error normal de Microsoft): ' . ($okS ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
-  foreach (['https://graph.microsoft.com/v1.0/' => 'Graph', 'https://login.live.com/' => 'login.live.com', 'https://www.microsoft.com/' => 'www.microsoft.com', 'https://api.github.com/' => 'api.github.com', 'https://example.com/' => 'example.com'] as $u => $name) {
-    if (microtime(true) - $t0 > 40) { $out[] = ['aviso', 'Se omiten las pruebas restantes por falta de tiempo.']; break; }
-    $r = od_http('GET', $u, ['timeout' => 6, 'cert' => true]);
-    $out[] = [$r['code'] > 0 && $r['code'] < 500 && $r['code'] !== 404 ? 'ok' : 'aviso', 'Prueba con ' . $name . ': HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · IP ' . ($r['ip'] ?: '—') . ' · certificado: ' . mb_substr($r['cert'] ?? '', 0, 90)];
-  }
-  $mine = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token';
-  $out[] = [$anyOk ? 'ok' : 'error', $anyOk ? 'Hay al menos una vía para llegar al inicio de sesión de Microsoft.' : 'Ninguna vía llega al inicio de sesión de Microsoft: el hosting lo bloquea o lo desvía.'];
+  // 3) ¿Funciona el acceso a OneDrive con la cuenta conectada?
+  if (!od_is_connected()) { $out[] = ['aviso', 'OneDrive no está conectado: pulsa «Conectar con OneDrive».']; return $out; }
+  $enc = implode('/', array_map('rawurlencode', explode('/', $c['folder'])));
+  $g = od_graph('/me/drive/root:/' . $enc);
+  if ($g['code'] === 200 && isset($g['json']['folder'])) $out[] = ['ok', 'Cuenta conectada y carpeta «' . $c['folder'] . '» encontrada en OneDrive (' . (int) ($g['json']['folder']['childCount'] ?? 0) . ' elementos en su primer nivel).'];
+  elseif ($g['code'] === 404) $out[] = ['error', 'La conexión funciona, pero no existe la carpeta «' . $c['folder'] . '» en tu OneDrive. Revisa la ruta en la configuración.'];
+  elseif ($g['code'] === 200) $out[] = ['error', '«' . $c['folder'] . '» existe pero no es una carpeta.'];
+  else $out[] = ['error', ($g['error'] !== '' ? $g['error'] : 'OneDrive respondió con el error HTTP ' . $g['code'] . '.') . (!empty($g['reconnect']) ? ' Vuelve a conectar OneDrive.' : '')];
 
-  $r = od_login_http('POST', $mine, ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
-  $okPost = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
-  $tn = ['curl' => 'cURL', 'noaccept' => 'cURL sin Accept', 'stream' => 'streams de PHP'][$r['transport'] ?? 'curl'] ?? '';
-  $out[] = [$okPost ? 'ok' : 'error', 'Lo que hará la web al pedir el token (con datos falsos, debe dar un error normal de Microsoft) usando ' . $tn . ': ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
-  $net = od_read_json('net.json');
-  if (!empty($net['login_base'])) $out[] = ['aviso', 'La web ya usa la dirección alternativa ' . $net['login_base'] . ' porque la normal no respondía bien.'];
-  if (!empty($net['transport'])) $out[] = ['aviso', 'La web ya usa «' . $net['transport'] . '» para hablar con el inicio de sesión de Microsoft porque cURL recibía una respuesta que no era de Microsoft.'];
-
-  $r = od_http('GET', $c['graph_base'] . '/me/drive', ['timeout' => 12]);
-  $out[] = [$r['code'] === 401 ? 'ok' : 'error', 'Acceso a OneDrive (Graph, sin permiso, debe responder 401): ' . ($r['code'] === 401 ? 'HTTP 401 correcto' : $show($r))];
+  // 4) Estado de la sincronización
+  $st = od_status();
+  $out[] = [$st['last_error'] === '' ? 'ok' : 'aviso', $st['last_error'] === '' ? 'Sin avisos en la última sincronización · ' . $st['notes'] . ' nota(s) en el servidor.' : 'Último aviso de la sincronización: ' . $st['last_error']];
   return $out;
 }
 
