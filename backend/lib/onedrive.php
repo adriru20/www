@@ -30,6 +30,7 @@ function od_config(): ?array {
   $c['refresh_minutes'] = max(1, (int) ($c['refresh_minutes'] ?? 10));
   $c['graph_base'] = rtrim((string) ($c['graph_base'] ?? 'https://graph.microsoft.com/v1.0'), '/');   // (solo para pruebas)
   $c['login_base'] = rtrim((string) ($c['login_base'] ?? 'https://login.microsoftonline.com'), '/');  // (solo para pruebas)
+  if (isset($c['login_aliases']) && !is_array($c['login_aliases'])) unset($c['login_aliases']);
   return $cfg = $c;
 }
 
@@ -57,7 +58,7 @@ function od_write_json(string $name, array $data): bool {
 
 // Devuelve ['code','body','json','headers'(en minúsculas),'error']
 function od_http(string $method, string $url, array $opt = []): array {
-  $out = ['code' => 0, 'body' => '', 'json' => null, 'headers' => [], 'error' => ''];
+  $out = ['code' => 0, 'body' => '', 'json' => null, 'headers' => [], 'error' => '', 'ip' => ''];
   if (!function_exists('curl_init')) { $out['error'] = 'Este servidor no tiene la extensión cURL de PHP.'; return $out; }
   $h = curl_init($url);
   $headers = $opt['headers'] ?? [];
@@ -67,6 +68,9 @@ function od_http(string $method, string $url, array $opt = []): array {
     CURLOPT_CUSTOMREQUEST  => $method,
     CURLOPT_RETURNTRANSFER => true,
     CURLOPT_FOLLOWLOCATION => false,               // las redirecciones se siguen a mano (para no enviar el token a otro sitio)
+    // IPv4 y HTTP/1.1 por defecto: es lo más compatible con hostings compartidos y proxies (se pueden desactivar para diagnosticar)
+    CURLOPT_IPRESOLVE      => ($opt['v4'] ?? true) ? CURL_IPRESOLVE_V4 : CURL_IPRESOLVE_WHATEVER,
+    CURLOPT_HTTP_VERSION   => ($opt['h11'] ?? true) ? CURL_HTTP_VERSION_1_1 : CURL_HTTP_VERSION_NONE,
     CURLOPT_CONNECTTIMEOUT => 8,
     CURLOPT_TIMEOUT        => (int) ($opt['timeout'] ?? 15),
     CURLOPT_HTTPHEADER     => $headers,
@@ -80,6 +84,7 @@ function od_http(string $method, string $url, array $opt = []): array {
   $res = curl_exec($h);
   if ($res === false) $out['error'] = curl_error($h);
   $out['code'] = (int) curl_getinfo($h, CURLINFO_RESPONSE_CODE);
+  $out['ip'] = (string) curl_getinfo($h, CURLINFO_PRIMARY_IP);
   curl_close($h);
   $out['body'] = is_string($res) ? $res : '';
   $j = json_decode($out['body'], true);
@@ -107,12 +112,32 @@ function od_authorize_url(): ?string {
   ]);
 }
 
+// Direcciones equivalentes del servicio de inicio de sesión de Microsoft. Algunos hostings bloquean o desvían una de ellas.
+const OD_LOGIN_ALIASES = ['https://login.microsoftonline.com', 'https://login.windows.net', 'https://login.microsoft.com'];
+function od_login_aliases(): array { return od_config()['login_aliases'] ?? OD_LOGIN_ALIASES; }   // (la clave de configuración «login_aliases» solo se usa en pruebas)
+
+// ¿La respuesta NO viene del servicio de Microsoft (404 de texto plano, página de error de un proxy...)?
+function od_not_from_sts(array $r): bool {
+  return $r['error'] === '' && $r['code'] >= 400 && !isset($r['json']['error']) && !isset($r['json']['issuer']) && !isset($r['json']['token_endpoint']);
+}
+
 // Pide tokens al endpoint de Microsoft. Devuelve ['ok'=>bool,'data'=>array,'error'=>string,'reconnect'=>bool]
 function od_token_request(array $form): array {
   $c = od_config();
-  $r = od_http('POST', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['form' => $form + [
-    'client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'scope' => od_scopes(),
-  ]]);
+  $form += ['client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'scope' => od_scopes()];
+  // Con la dirección por defecto se prueban las equivalentes si la primera da una respuesta que no es de Microsoft; se recuerda la que funcione
+  $bases = [$c['login_base']];
+  if ($c['login_base'] === od_login_aliases()[0]) {
+    $pref = (string) (od_read_json('net.json')['login_base'] ?? '');
+    $bases = array_values(array_unique(array_merge($pref !== '' && in_array($pref, od_login_aliases(), true) ? [$pref] : [], od_login_aliases())));
+  }
+  foreach ($bases as $base) {
+    $r = od_http('POST', $base . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['form' => $form]);
+    if (!od_not_from_sts($r)) {
+      if ($base !== $c['login_base'] && $r['error'] === '') od_write_json('net.json', ['login_base' => $base]);
+      break;
+    }
+  }
   if ($r['error'] !== '') return ['ok' => false, 'data' => [], 'error' => 'No se pudo contactar con Microsoft: ' . $r['error'], 'reconnect' => false];
   $j = $r['json'] ?? [];
   if ($r['code'] === 200 && !empty($j['access_token'])) return ['ok' => true, 'data' => $j, 'error' => '', 'reconnect' => false];
@@ -497,15 +522,28 @@ function od_diagnose(): array {
   $out[] = ['ok', 'Carpeta: «' . $c['folder'] . '» · tenant: ' . $c['tenant'] . ' · redirect_uri: ' . $c['redirect_uri']];
 
   $show = fn(array $r) => 'HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($r['body'], 0, 200)))), 0, 140);
-  $r = od_http('GET', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 12]);
-  $tokenEndpoint = (string) ($r['json']['token_endpoint'] ?? '');
-  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'Acceso a Microsoft (login): ' . ($r['code'] === 200 ? 'HTTP 200 · punto de entrada ' . $tokenEndpoint : $show($r))];
+  $proxy = array_filter([getenv('https_proxy'), getenv('HTTPS_PROXY'), getenv('http_proxy'), getenv('HTTP_PROXY')]);
+  $out[] = [$proxy ? 'aviso' : 'ok', $proxy ? 'El servidor define un proxy para las conexiones salientes: ' . preg_replace('#//[^@/]*@#', '//', implode(' · ', array_unique($proxy))) : 'Sin proxy definido en el entorno del servidor.'];
+
+  // Mismo servicio en distintas direcciones y con distintas opciones de red: así se ve qué combinación atraviesa el hosting
+  $anyOk = false;
+  foreach (od_login_aliases() as $base) {
+    foreach ([['IPv4 + HTTP/1.1', true, true], ['IPv6/auto + HTTP/2', false, false]] as [$label, $v4, $h11]) {
+      $r = od_http('GET', $base . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 10, 'v4' => $v4, 'h11' => $h11]);
+      $good = $r['code'] === 200 && !empty($r['json']['token_endpoint']);
+      $anyOk = $anyOk || $good;
+      $srv = ($r['headers']['server'] ?? '') !== '' ? ' · servidor: ' . $r['headers']['server'] : '';
+      $out[] = [$good ? 'ok' : 'error', preg_replace('#^https://#', '', $base) . ' [' . $label . '] → ' . ($good ? 'HTTP 200' : $show($r)) . ' · IP ' . ($r['ip'] ?: '—') . $srv];
+    }
+  }
   $mine = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token';
-  if ($tokenEndpoint !== '' && $tokenEndpoint !== $mine) $out[] = ['aviso', 'La dirección de token que usa la web (' . $mine . ') no coincide con la que anuncia Microsoft.'];
+  $out[] = [$anyOk ? 'ok' : 'error', $anyOk ? 'Hay al menos una vía para llegar al inicio de sesión de Microsoft.' : 'Ninguna vía llega al inicio de sesión de Microsoft: el hosting lo bloquea o lo desvía.'];
 
   $r = od_http('POST', $mine, ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
   $okPost = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
-  $out[] = [$okPost ? 'ok' : 'error', 'Petición de token (con datos falsos, debe dar un error normal de Microsoft): ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
+  $out[] = [$okPost ? 'ok' : 'error', 'Petición de token a ' . parse_url($mine, PHP_URL_HOST) . ' (con datos falsos, debe dar un error normal de Microsoft): ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
+  $pref = (string) (od_read_json('net.json')['login_base'] ?? '');
+  if ($pref !== '') $out[] = ['aviso', 'La web ya usa la dirección alternativa ' . $pref . ' porque la normal no respondía bien.'];
 
   $r = od_http('GET', $c['graph_base'] . '/me/drive', ['timeout' => 12]);
   $out[] = [$r['code'] === 401 ? 'ok' : 'error', 'Acceso a OneDrive (Graph, sin permiso, debe responder 401): ' . ($r['code'] === 401 ? 'HTTP 401 correcto' : $show($r))];
