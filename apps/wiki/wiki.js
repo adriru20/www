@@ -352,7 +352,27 @@
     }
   }
 
-  async function loadNote(path) {
+  // Móvil: lista y nota ocupan la pantalla completa, una cada vez (el botón «atrás» del móvil también vuelve a la lista)
+  const app = document.getElementById('app');
+  const mobileMq = window.matchMedia('(max-width: 991.98px)');
+  let listScroll = 0;
+  function showNoteView() {
+    if (!mobileMq.matches || app.classList.contains('note-open')) return;
+    listScroll = window.scrollY;
+    app.classList.add('note-open');
+    try { history.pushState({ wikiNote: 1 }, ''); } catch (e) { /* sin historial */ }
+  }
+  function showListView(fromPop) {
+    if (!app.classList.contains('note-open')) return;
+    app.classList.remove('note-open');
+    if (!fromPop && history.state && history.state.wikiNote) { try { history.back(); } catch (e) { /* ignorar */ } }
+    window.scrollTo({ top: listScroll });
+  }
+  window.addEventListener('popstate', () => showListView(true));
+  document.getElementById('note-back').addEventListener('click', () => showListView(false));
+  mobileMq.addEventListener('change', () => { if (!mobileMq.matches) app.classList.remove('note-open'); });
+
+  async function loadNote(path, quiet) {
     try {
       const res = await fetch(API + 'read.php?file=' + encodeURIComponent(path), { credentials: 'same-origin' });
       if (res.status === 401) { location.href = '/src/login/?next=' + encodeURIComponent(location.pathname); return; }
@@ -368,6 +388,8 @@
       document.querySelectorAll('.file.active').forEach((f) => f.classList.remove('active'));
       const current = [...document.querySelectorAll('.file')].find((f) => f.dataset.path === path);
       if (current) current.classList.add('active');
+      document.getElementById('note-bar-title').textContent = title;
+      if (!quiet) showNoteView();
       document.getElementById('content').scrollTo({ top: 0 });
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -462,7 +484,7 @@
         const open = document.querySelector('.file.active');
         const openPath = open ? open.dataset.path : null;
         await loadList();
-        if (openPath && [...document.querySelectorAll('.file')].some((f) => f.dataset.path === openPath)) loadNote(openPath);
+        if (openPath && [...document.querySelectorAll('.file')].some((f) => f.dataset.path === openPath)) loadNote(openPath, true);
       }
       if (last && last.state === 'error') syncStatus.textContent = '⚠ ' + last.message;
       else if (last && last.state === 'busy') syncStatus.textContent = 'Otra sincronización está en marcha…';

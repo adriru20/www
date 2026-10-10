@@ -93,11 +93,27 @@
   padding-bottom: .6rem; margin: 0 0 1.5rem !important; text-transform: capitalize;
 }
 
-/* Móvil: la barra lateral pasa arriba y ocupa todo el ancho */
+.note-bar { display: none; }
+
+/* Móvil: la lista de notas ocupa toda la pantalla; al elegir una nota se muestra ella sola y una barra permite volver */
 @media (max-width: 991.98px) {
   #app { flex-direction: column; }
-  #sidebar { width: 100%; position: static; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--surface-4); }
-  #content { padding: 1.5rem 1rem; }
+  #sidebar { width: 100%; position: static; max-height: none; min-height: calc(100vh - var(--header-h)); border-right: 0; padding: 1rem; }
+  #content { padding: 0 1rem 1.5rem; }
+  #app:not(.note-open) #content { display: none; }
+  #app.note-open #sidebar { display: none; }
+  .note-bar { display: flex; align-items: center; gap: .75rem; position: sticky; top: var(--header-h); z-index: 5; margin: 0 -1rem 1rem; padding: .5rem 1rem; background: var(--surface-1); border-bottom: 1px solid var(--surface-4); }
+  .note-back { flex: 0 0 auto; min-height: 2.5rem; padding: 0 .9rem; background: var(--surface-3); color: #fff; border: 1px solid var(--surface-4); border-radius: .5rem; font-size: .95rem; cursor: pointer; }
+  .note-back:active { border-color: var(--brand-pink); }
+  .note-bar-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: .9rem; }
+  /* lista más cómoda para el dedo */
+  #search-input { padding: .8rem .9rem; font-size: 1rem; }
+  .folder-header { padding: .7rem .6rem; }
+  .file { padding: .7rem .6rem; font-size: 1rem; }
+  .sync-btn { min-width: 2.4rem; min-height: 2.4rem; font-size: 1.1rem; }
+  .note-title { font-size: 1.6rem; }
+  #viewer { font-size: 1rem; }
+  #viewer .wiki-embed-pdf iframe { height: 60vh; }
 }
 
 /* Sincronización con OneDrive */
