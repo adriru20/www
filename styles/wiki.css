@@ -153,3 +153,12 @@
 .wiki-lb-prev { left: .4rem; } .wiki-lb-next { right: .4rem; }
 .wiki-lb.single .wiki-lb-nav { display: none; }
 @media (max-width: 575.98px) { .wiki-lb-stage { padding: .25rem .25rem .75rem; } .wiki-lb-nav { opacity: .7; width: 2.2rem; } }
+
+/* Índice automático (```table-of-contents) */
+#viewer .wiki-toc { margin: 1rem 0 1.4rem; }
+#viewer .wiki-toc ul, #viewer .wiki-toc ol { margin: .2rem 0; padding-left: 1.4rem; }
+#viewer .wiki-toc li { margin-bottom: .25rem; }
+#viewer .wiki-toc .toc-link { font-weight: 500; }
+#viewer .wiki-toc-title { font-weight: 700; color: #fff; margin-bottom: .3rem; }
+#viewer .wiki-toc-empty { color: var(--text-muted); font-size: .9rem; }
+#viewer h1, #viewer h2, #viewer h3, #viewer h4, #viewer h5, #viewer h6 { scroll-margin-top: calc(var(--header-h, 70px) + .75rem); }
