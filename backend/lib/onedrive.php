@@ -118,6 +118,11 @@ function od_token_request(array $form): array {
   if ($r['code'] === 200 && !empty($j['access_token'])) return ['ok' => true, 'data' => $j, 'error' => '', 'reconnect' => false];
   $err = (string) ($j['error'] ?? ('HTTP ' . $r['code']));
   $desc = trim(explode("\r", (string) ($j['error_description'] ?? ''))[0]);
+  if (!isset($j['error'])) {          // la respuesta no es el error normal de Microsoft: se enseña un trozo para poder diagnosticarlo
+    $snip = trim(preg_replace('/\s+/', ' ', strip_tags(substr($r['body'], 0, 300))));
+    $desc = $snip !== '' ? mb_substr($snip, 0, 160) : 'respuesta vacía';
+    error_log('OneDrive token: HTTP ' . $r['code'] . ' en ' . parse_url($c['login_base'], PHP_URL_HOST) . ' → ' . $desc);
+  }
   return ['ok' => false, 'data' => [], 'error' => 'Microsoft rechazó la petición (' . $err . ($desc !== '' ? ': ' . $desc : '') . ').',
           'reconnect' => in_array($err, ['invalid_grant', 'interaction_required', 'invalid_client', 'unauthorized_client'], true)];
 }
@@ -477,4 +482,32 @@ function od_prune_untracked(): array {
     if (@unlink($file->getPathname())) { $n++; od_remove_note_dirs(dirname($file->getPathname())); }
   }
   return [$n, ''];
+}
+
+// Diagnóstico de la conexión (no muestra ningún secreto). Devuelve una lista de [estado 'ok'|'aviso'|'error', texto]
+function od_diagnose(): array {
+  $c = od_config();
+  $out = [];
+  $out[] = ['ok', 'PHP ' . PHP_VERSION . ' · cURL ' . (function_exists('curl_version') ? curl_version()['version'] . ' · ' . (curl_version()['ssl_version'] ?? '') : 'NO DISPONIBLE')];
+  if (!$c) return array_merge($out, [['error', 'Falta o está incompleto backend/config/onedrive.local.php.']]);
+  if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $c['client_id'])) $out[] = ['aviso', 'El client_id no tiene forma de «Id. de aplicación (cliente)» (debería ser un código con guiones tipo xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx).'];
+  if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $c['client_secret'])) $out[] = ['aviso', 'El client_secret parece un «Id. del secreto» (un código con guiones). Hay que poner el VALOR del secreto, que es una cadena más larga y rara.'];
+  elseif (strlen($c['client_secret']) < 20) $out[] = ['aviso', 'El client_secret es muy corto (' . strlen($c['client_secret']) . ' caracteres): ¿está completo?'];
+  else $out[] = ['ok', 'client_id y client_secret con aspecto correcto (' . strlen($c['client_secret']) . ' caracteres de secreto).'];
+  $out[] = ['ok', 'Carpeta: «' . $c['folder'] . '» · tenant: ' . $c['tenant'] . ' · redirect_uri: ' . $c['redirect_uri']];
+
+  $show = fn(array $r) => 'HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($r['body'], 0, 200)))), 0, 140);
+  $r = od_http('GET', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 12]);
+  $tokenEndpoint = (string) ($r['json']['token_endpoint'] ?? '');
+  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'Acceso a Microsoft (login): ' . ($r['code'] === 200 ? 'HTTP 200 · punto de entrada ' . $tokenEndpoint : $show($r))];
+  $mine = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token';
+  if ($tokenEndpoint !== '' && $tokenEndpoint !== $mine) $out[] = ['aviso', 'La dirección de token que usa la web (' . $mine . ') no coincide con la que anuncia Microsoft.'];
+
+  $r = od_http('POST', $mine, ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
+  $okPost = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
+  $out[] = [$okPost ? 'ok' : 'error', 'Petición de token (con datos falsos, debe dar un error normal de Microsoft): ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
+
+  $r = od_http('GET', $c['graph_base'] . '/me/drive', ['timeout' => 12]);
+  $out[] = [$r['code'] === 401 ? 'ok' : 'error', 'Acceso a OneDrive (Graph, sin permiso, debe responder 401): ' . ($r['code'] === 401 ? 'HTTP 401 correcto' : $show($r))];
+  return $out;
 }
