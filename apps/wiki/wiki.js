@@ -74,15 +74,96 @@
     return '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" class="wiki-attach">' + (IMG_RE.test(target) ? '🖼️ ' : '📎 ') + esc(alias && !/^\d+(x\d+)?$/.test(alias.trim()) ? alias.trim() : target) + '</a>';
   }
 
-  // Convierte los huecos de Obsidian fuera de bloques de código (``` y `código`)
-  function convertWikiSyntax(markdown) {
+  // ---- Índice automático: bloque ```table-of-contents (plugin de Obsidian). Opciones: minLevel, maxLevel, exclude: /regex/flags, style, title, includeLinks
+  function parseTocOptions(text) {
+    const o = { minLevel: 1, maxLevel: 6, exclude: null, ordered: false, title: '', links: true };
+    text.split('\n').forEach((line) => {
+      const m = /^\s*([A-Za-z]+)\s*:\s*(.*?)\s*$/.exec(line);
+      if (!m) return;
+      const k = m[1].toLowerCase(), v = m[2];
+      if (k === 'minlevel') o.minLevel = Math.min(6, Math.max(1, parseInt(v, 10) || 1));
+      else if (k === 'maxlevel') o.maxLevel = (parseInt(v, 10) || 0) > 0 ? Math.min(6, parseInt(v, 10)) : 6;
+      else if (k === 'exclude') { const r = /^\/(.*)\/([a-z]*)$/s.exec(v); o.exclude = r ? { src: r[1], flags: r[2] } : { src: v.replace(/^["']|["']$/g, ''), flags: '' }; }
+      else if (k === 'style') o.ordered = /ordered/i.test(v);
+      else if (k === 'title') o.title = v.replace(/^["']|["']$/g, '');
+      else if (k === 'includelinks') o.links = !/^false$/i.test(v);
+    });
+    return o;
+  }
+
+  // Convierte los huecos de Obsidian fuera de bloques de código (``` y `código`).
+  // Cada hueco se sustituye por un MARCADOR (holder) y el HTML real se pone después de pasar por marked: si el HTML quedara solo en su línea,
+  // marked lo tomaría por un «bloque HTML» y se tragaría las líneas siguientes (encabezados, listas…) hasta la próxima línea en blanco.
+  function convertWikiSyntax(markdown, holder) {
     return markdown.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g).map((part, i) => {
-      if (i % 2 === 1) {            // bloque de código: los tabuladores iniciales se protegen (marked los cambia por espacios) y se restauran al pintar
+      if (i % 2 === 1) {
+        const toc = /^(```|~~~)[ \t]*(?:table-of-contents|toc)[ \t]*\r?\n([\s\S]*?)\r?\n?(?:```|~~~)$/.exec(part);
+        if (toc) return '\n\n' + holder('<nav class="wiki-toc" data-toc="' + esc(JSON.stringify(parseTocOptions(toc[2]))) + '"></nav>') + '\n\n';
+        // bloque de código: los tabuladores iniciales se protegen (marked los cambia por espacios) y se restauran al pintar
         return /^(```|~~~)/.test(part) ? part.replace(/^( *)(\t+)/gm, (m, sp, tabs) => sp + '\uE000'.repeat(tabs.length)) : part;
       }
-      return part.replace(/(!?)\[\[(!?)(.*?)\]\]/g, (m, bang, bang2, inner) => wikiToHtml(!!(bang || bang2), inner));
+      return part.replace(/(!?)\[\[(!?)(.*?)\]\]/g, (m, bang, bang2, inner) => holder(wikiToHtml(!!(bang || bang2), inner)));
     }).join('');
   }
+
+  // Markdown de una nota -> HTML (sin sanear todavía)
+  function renderMarkdown(md) {
+    const embeds = [];
+    const holder = (html) => { embeds.push(html); return '\uE001' + (embeds.length - 1) + '\uE002'; };
+    let html = marked.parse(convertWikiSyntax(md, holder));
+    embeds.forEach((h, i) => {
+      const ph = '\uE001' + i + '\uE002';
+      html = html.split('<p>' + ph + '</p>').join(h).split(ph).join(h);     // solo en su párrafo: sin <p> alrededor
+    });
+    return html;
+  }
+
+  // Rellena los índices de la nota con los encabezados YA pintados (sin contar los de notas incrustadas)
+  let tocSeq = 0;
+  function buildToc(root) {
+    const navs = root.querySelectorAll('nav.wiki-toc[data-toc]');
+    if (!navs.length) return;
+    const ownBox = root.matches('.wiki-embed-note') ? root : null;
+    const heads = [...root.querySelectorAll('h1,h2,h3,h4,h5,h6')].filter((h) => !h.classList.contains('note-title') && h.closest('.wiki-embed-note') === ownBox);
+    navs.forEach((nav) => {
+      let o; try { o = JSON.parse(nav.dataset.toc); } catch (e) { o = parseTocOptions(''); }
+      nav.removeAttribute('data-toc');
+      let re = null; if (o.exclude) { try { re = new RegExp(o.exclude.src, o.exclude.flags.replace(/[^imsu]/g, '')); } catch (e) { re = null; } }
+      const items = heads.filter((h) => { const l = +h.tagName[1]; return l >= o.minLevel && l <= o.maxLevel && !(re && re.test(h.textContent.trim())); });
+      if (o.title) { const t = document.createElement('div'); t.className = 'wiki-toc-title'; t.textContent = o.title; nav.appendChild(t); }
+      if (!items.length) { const em = document.createElement('p'); em.className = 'wiki-toc-empty'; em.textContent = 'Esta nota no tiene encabezados para el índice.'; nav.appendChild(em); return; }
+      const tag = o.ordered ? 'ol' : 'ul';
+      const rootList = document.createElement(tag);
+      const stack = [];
+      items.forEach((h) => {
+        const lvl = +h.tagName[1];
+        if (!h.id) h.id = 'wh' + (++tocSeq);
+        if (!stack.length) stack.push({ level: lvl, list: rootList });
+        while (stack.length > 1 && stack[stack.length - 1].level > lvl) stack.pop();
+        let top = stack[stack.length - 1];
+        if (top.level < lvl) {                                    // más profundo: lista anidada dentro del último elemento
+          let parent = top.list.lastElementChild;
+          if (!parent) { parent = document.createElement('li'); top.list.appendChild(parent); }
+          const sub = document.createElement(tag);
+          parent.appendChild(sub);
+          top = { level: lvl, list: sub }; stack.push(top);
+        }
+        const li = document.createElement('li');
+        if (o.links) { const a = document.createElement('a'); a.href = '#' + h.id; a.className = 'toc-link'; a.dataset.target = h.id; a.textContent = h.textContent.trim(); li.appendChild(a); }
+        else li.textContent = h.textContent.trim();
+        top.list.appendChild(li);
+      });
+      nav.appendChild(rootList);
+    });
+  }
+
+  viewer.addEventListener('click', (e) => {                       // los enlaces del índice llevan al encabezado dentro de la nota (sin tocar la URL)
+    const a = e.target.closest('a.toc-link');
+    if (!a) return;
+    e.preventDefault();
+    const t = document.getElementById(a.dataset.target);
+    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
 
   // Las imágenes con ruta relativa de Markdown normal ![](carpeta/foto.png) también se buscan por nombre
   marked.use({ renderer: { image(href, title, text) {
@@ -240,6 +321,7 @@
 
   // Rellena las notas incrustadas (![[Nota]]) y marca los archivos que no existen
   async function hydrateEmbeds(root, depth) {
+    buildToc(root);
     decorateCode(root);
     root.querySelectorAll('img').forEach((img) => {
       if (img.closest('a')) return;
@@ -264,28 +346,50 @@
         if (!res.ok) throw new Error('no se pudo leer');
         let md = await res.text();
         if (box.dataset.frag) md = sectionOf(md, box.dataset.frag);
-        box.innerHTML = sanitize('<div class="wiki-embed-title"><a href="#" class="internal-link" data-note="' + esc(name) + '">' + esc(name) + '</a></div>' + marked.parse(convertWikiSyntax(md)));
+        box.innerHTML = sanitize('<div class="wiki-embed-title"><a href="#" class="internal-link" data-note="' + esc(name) + '">' + esc(name) + '</a></div>' + renderMarkdown(md));
         await hydrateEmbeds(box, depth + 1);
       } catch (e) { box.innerHTML = '<span class="wiki-missing">⚠ No se pudo cargar «' + esc(name) + '»</span>'; }
     }
   }
 
-  async function loadNote(path) {
+  // Móvil: lista y nota ocupan la pantalla completa, una cada vez (el botón «atrás» del móvil también vuelve a la lista)
+  const app = document.getElementById('app');
+  const mobileMq = window.matchMedia('(max-width: 991.98px)');
+  let listScroll = 0;
+  function showNoteView() {
+    if (!mobileMq.matches || app.classList.contains('note-open')) return;
+    listScroll = window.scrollY;
+    app.classList.add('note-open');
+    try { history.pushState({ wikiNote: 1 }, ''); } catch (e) { /* sin historial */ }
+  }
+  function showListView(fromPop) {
+    if (!app.classList.contains('note-open')) return;
+    app.classList.remove('note-open');
+    if (!fromPop && history.state && history.state.wikiNote) { try { history.back(); } catch (e) { /* ignorar */ } }
+    window.scrollTo({ top: listScroll });
+  }
+  window.addEventListener('popstate', () => showListView(true));
+  document.getElementById('note-back').addEventListener('click', () => showListView(false));
+  mobileMq.addEventListener('change', () => { if (!mobileMq.matches) app.classList.remove('note-open'); });
+
+  async function loadNote(path, quiet) {
     try {
       const res = await fetch(API + 'read.php?file=' + encodeURIComponent(path), { credentials: 'same-origin' });
       if (res.status === 401) { location.href = '/src/login/?next=' + encodeURIComponent(location.pathname); return; }
       if (!res.ok) throw new Error('No se pudo cargar la nota');
 
-      const markdown = convertWikiSyntax(await res.text());
+      const markdown = await res.text();
 
       const title = path.split('/').pop().replace(/\.md$/i, '');
       // DOMPurify elimina scripts y atributos peligrosos del HTML generado
-      viewer.innerHTML = sanitize('<h1 class="note-title">' + esc(title) + '</h1>' + marked.parse(markdown));
+      viewer.innerHTML = sanitize('<h1 class="note-title">' + esc(title) + '</h1>' + renderMarkdown(markdown));
       hydrateEmbeds(viewer, 0);
 
       document.querySelectorAll('.file.active').forEach((f) => f.classList.remove('active'));
       const current = [...document.querySelectorAll('.file')].find((f) => f.dataset.path === path);
       if (current) current.classList.add('active');
+      document.getElementById('note-bar-title').textContent = title;
+      if (!quiet) showNoteView();
       document.getElementById('content').scrollTo({ top: 0 });
       window.scrollTo({ top: 0 });
     } catch (err) {
@@ -380,7 +484,7 @@
         const open = document.querySelector('.file.active');
         const openPath = open ? open.dataset.path : null;
         await loadList();
-        if (openPath && [...document.querySelectorAll('.file')].some((f) => f.dataset.path === openPath)) loadNote(openPath);
+        if (openPath && [...document.querySelectorAll('.file')].some((f) => f.dataset.path === openPath)) loadNote(openPath, true);
       }
       if (last && last.state === 'error') syncStatus.textContent = '⚠ ' + last.message;
       else if (last && last.state === 'busy') syncStatus.textContent = 'Otra sincronización está en marcha…';

@@ -22,6 +22,7 @@ $page_scripts = ['/js/vendor/marked.min.js', '/js/vendor/purify.min.js', '/apps/
       <ul id="file-list"></ul>
     </aside>
     <main id="content">
+      <div class="note-bar"><button type="button" id="note-back" class="note-back"><i class="fa-solid fa-chevron-left"></i> Notas</button><span id="note-bar-title" class="note-bar-title"></span></div>
       <div id="viewer"><p class="text-muted">Selecciona una nota de la lista.</p></div>
     </main>
   </div>
