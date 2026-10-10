@@ -114,12 +114,43 @@ h1, h2, h3, h4 { font-weight: 700; letter-spacing: -.01em; }
   color: #fff; background: linear-gradient(135deg, var(--brand-pink), var(--brand-blue));
 }
 .app-navbar .nav-cta:hover { filter: brightness(1.1); color: #fff; }
-.navbar-toggler { border-color: var(--surface-4); }
-.navbar-toggler:focus { box-shadow: 0 0 0 .2rem rgba(255, 51, 133, .3); }
-.navbar-toggler-icon { filter: invert(1) grayscale(1) brightness(1.5); }
+.app-navbar .dropdown-toggle { background: none; border: 0; }
+.app-navbar .dropdown-toggle::after { margin-left: .4em; }
+.account-menu { background: var(--surface-1); border: 1px solid var(--surface-4); border-radius: .75rem; padding: .4rem; min-width: 13rem; box-shadow: 0 .75rem 2rem rgba(0, 0, 0, .5); }
+.account-menu .dropdown-item { color: var(--text-main); border-radius: .5rem; padding: .6rem .8rem; font-weight: 600; }
+.account-menu .dropdown-item i { width: 1.4rem; margin-right: .3rem; text-align: center; color: var(--text-muted); }
+.account-menu .dropdown-item:hover, .account-menu .dropdown-item:focus { background: rgba(255, 255, 255, .07); color: #fff; }
+.account-menu .dropdown-item.active { background: rgba(255, 255, 255, .07); color: #fff; box-shadow: inset 3px 0 0 var(--brand-pink); }
+.account-menu .dropdown-divider { border-color: var(--surface-4); }
+.account-menu .nav-cta { background: linear-gradient(135deg, var(--brand-pink), var(--brand-blue)); display: block; padding: .65rem .85rem; border-radius: .5rem; font-weight: 700; color: #fff; }
+
+/* Móvil: menú inferior (al alcance del pulgar). Arriba queda solo el logo. */
+.bottom-nav { display: none; }
 @media (max-width: 991.98px) {
-  .app-navbar .navbar-collapse { padding: .75rem 0 .5rem; }
-  .app-navbar .nav-link.active { box-shadow: inset 3px 0 0 var(--brand-pink); border-radius: .5rem; }
+  body { padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+  .bottom-nav {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1030;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(21, 23, 26, .96); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--surface-4);
+  }
+  .bottom-nav-item, .bottom-nav-drop { flex: 1 1 0; min-width: 0; }
+  .bottom-nav-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+    min-height: 3.75rem; padding: .45rem .15rem; background: none; border: 0; border-top: 2px solid transparent;
+    color: var(--text-muted); text-decoration: none; font-size: .68rem; font-weight: 600; line-height: 1.1;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav-drop .bottom-nav-item { width: 100%; }
+  .bottom-nav-item i { font-size: 1.3rem; }
+  .bottom-nav-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bottom-nav-item:active { background: rgba(255, 255, 255, .08); }
+  .bottom-nav-item.active, .bottom-nav-item.show { color: #fff; border-top-color: var(--brand-pink); }
+  .bottom-nav-item.active i, .bottom-nav-item.show i { color: var(--brand-pink); }
+  .bottom-nav-cta i { color: var(--brand-pink); }
+  /* Desplegable «Mi cuenta» hacia arriba, con botones grandes para el dedo */
+  .bottom-nav .account-menu { right: .5rem !important; left: auto !important; min-width: min(17rem, calc(100vw - 1rem)); }
+  .bottom-nav .account-menu .dropdown-item, .bottom-nav .account-menu .nav-cta { padding: .9rem 1rem; font-size: 1.05rem; }
 }
 
 /* ---------- Pie ---------- */

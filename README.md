@@ -93,6 +93,11 @@ OneDrive (solo notas `.md`, solo lectura). Código: `backend/lib/onedrive.php`; 
 - En la wiki, los bloques de código llevan un botón **Copiar** y las imágenes se amplían al pulsarlas (visor con ← → entre imágenes, clic para tamaño real, Esc para cerrar).
 - El despliegue **no toca** `apps/wiki/vault/` (excluido en `deploy.yml`): la fuente de verdad es OneDrive. El vault antiguo sigue en el repositorio como copia.
 
+## Menú
+
+`frontend/menu.php`: en escritorio, barra superior; en móvil, arriba solo queda el logo y las secciones pasan a una barra inferior (`.bottom-nav`, con margen de seguridad para iPhone).
+«Mi cuenta» es un desplegable con Mi cuenta, Usuarios y OneDrive (solo administradores) y Salir (destacado). En móvil se abre hacia arriba.
+
 ## Instalar como aplicación (PWA)
 
 Cada sección se puede instalar por separado desde el navegador (Chrome/Edge/Android: menú → «Instalar aplicación»; iPhone: Compartir → «Añadir a pantalla de inicio»):
