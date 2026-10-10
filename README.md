@@ -86,6 +86,8 @@ OneDrive (solo notas `.md`, solo lectura). Código: `backend/lib/onedrive.php`; 
 - Archivos incrustados de Obsidian: `![[foto.png]]`, `[[!foto.png]]`, `![[doc.pdf]]`, audio/vídeo y `![[Nota]]` (se incrusta la nota). La wiki los busca **por nombre** en todo el vault
   (`apps/wiki/api/file.php`): si OneDrive está conectado se bajan de allí la primera vez que se piden (caché privada en `backend/onedrive/files/`, hasta 25 MB); si no, se buscan en el vault del servidor.
   Solo se muestran en la página los tipos seguros (imágenes, PDF, audio, vídeo); el resto se descarga. Los SVG se sirven con CSP `sandbox`.
+- Qué carpetas y notas no salen en la lista: `apps/wiki/config.php` (`hide`; comparación sin mayúsculas y sin el selector de emoji; lo que empieza por punto nunca se muestra). Siguen en el vault y sus imágenes se siguen encontrando por nombre.
+- En la wiki, los bloques de código llevan un botón **Copiar** y las imágenes se amplían al pulsarlas (visor con ← → entre imágenes, clic para tamaño real, Esc para cerrar).
 - El despliegue **no toca** `apps/wiki/vault/` (excluido en `deploy.yml`): la fuente de verdad es OneDrive. El vault antiguo sigue en el repositorio como copia.
 
 ## Pendientes (ideas aparcadas)
