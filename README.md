@@ -85,5 +85,9 @@ OneDrive (solo notas `.md`, solo lectura). Código: `backend/lib/onedrive.php`; 
 - El despliegue **no toca** `apps/wiki/vault/` (excluido en `deploy.yml`): la fuente de verdad es OneDrive. El vault antiguo sigue en el repositorio como copia.
 
 ## Pendientes (ideas aparcadas)
+- **Imágenes borradas del inventario que «reaparecen» en cada despliegue** (apuntado, hacer junto con la papelera): 14 imágenes del inventario están dentro del repositorio
+  (`apps/inventario/img/`, salvo `.htaccess`) y el despliegue sube todos los archivos del repositorio en cada ejecución, así que las que se borren en el servidor vuelven.
+  Arreglo previsto: quitar esas imágenes del repositorio (`git rm -r --cached apps/inventario/img/`, conservando `.htaccess`), ignorarlas en `.gitignore` y excluir
+  `apps/inventario/img/` del despliegue en `deploy.yml` (como ya se hace con `apps/wiki/vault/`). Antes, descargar una copia de esas imágenes por si interesa conservarlas.
 - Papelera de recuperación del inventario; quitar la columna antigua `inv_objetos.localizacion`; revisar la localización «•».
 - Cuando la sincronización con OneDrive lleve tiempo funcionando: sacar `apps/wiki/vault/` del repositorio (`git rm -r --cached`).
