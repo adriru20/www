@@ -104,9 +104,9 @@ $page_scripts = ['/src/onedrive/onedrive.js'];
     <?php endif; ?>
     <?php if ($cfg): ?>
       <div class="card mb-3"><div class="card-body">
-        <h2 class="h6">Diagnóstico</h2>
-        <p class="small text-muted">Comprueba, sin usar ningún secreto, que el servidor llega a Microsoft y que la configuración tiene buena pinta.</p>
-        <form method="POST" class="mb-2"><?= csrf_input() ?><input type="hidden" name="action" value="diagnose"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="fa-solid fa-stethoscope"></i> Probar conexión con Microsoft</button></form>
+        <h2 class="h6">Comprobar la conexión</h2>
+        <p class="small text-muted">Comprueba la configuración, que el servidor llega a Microsoft, que la cuenta conectada accede a la carpeta de notas y el estado de la última sincronización.</p>
+        <form method="POST" class="mb-2"><?= csrf_input() ?><input type="hidden" name="action" value="diagnose"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="fa-solid fa-stethoscope"></i> Comprobar la conexión</button></form>
         <?php if ($diag): ?>
           <ul class="list-unstyled small mb-0">
             <?php foreach ($diag as [$estado, $texto]): ?>
