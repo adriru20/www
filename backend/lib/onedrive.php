@@ -62,6 +62,7 @@ function od_http(string $method, string $url, array $opt = []): array {
   if (!function_exists('curl_init')) { $out['error'] = 'Este servidor no tiene la extensión cURL de PHP.'; return $out; }
   $h = curl_init($url);
   $headers = $opt['headers'] ?? [];
+  if (!empty($opt['noaccept'])) $headers[] = 'Accept:';           // quita la cabecera «Accept: */*» que añade cURL
   $body = null;
   if (isset($opt['form'])) { $body = http_build_query($opt['form']); $headers[] = 'Content-Type: application/x-www-form-urlencoded'; }
   curl_setopt_array($h, [
@@ -93,6 +94,55 @@ function od_http(string $method, string $url, array $opt = []): array {
   $j = json_decode($out['body'], true);
   $out['json'] = is_array($j) ? $j : null;
   return $out;
+}
+
+// Misma idea que od_http() pero con los «streams» de PHP (otro cliente HTTP distinto de cURL). Mismo formato de respuesta.
+function od_http_stream(string $method, string $url, array $opt = []): array {
+  $out = ['code' => 0, 'body' => '', 'json' => null, 'headers' => [], 'error' => '', 'ip' => ''];
+  if (!ini_get('allow_url_fopen')) { $out['error'] = 'allow_url_fopen está desactivado en este servidor.'; return $out; }
+  $headers = $opt['headers'] ?? [];
+  $content = '';
+  if (isset($opt['form'])) { $content = http_build_query($opt['form']); $headers[] = 'Content-Type: application/x-www-form-urlencoded'; }
+  $ctx = stream_context_create(['http' => ['method' => $method, 'header' => implode("\r\n", $headers), 'content' => $content,
+                                           'timeout' => (int) ($opt['timeout'] ?? 15), 'ignore_errors' => true, 'follow_location' => 0]]);
+  $body = @file_get_contents($url, false, $ctx);
+  $resp = $http_response_header ?? [];
+  foreach ($resp as $i => $line) {
+    if ($i === 0 && preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) { $out['code'] = (int) $m[1]; continue; }
+    $p = explode(':', $line, 2);
+    if (count($p) === 2) $out['headers'][strtolower(trim($p[0]))] = trim($p[1]);
+  }
+  if ($body === false && $out['code'] === 0) $out['error'] = 'No se pudo conectar (streams).';
+  $out['body'] = is_string($body) ? $body : '';
+  $j = json_decode($out['body'], true);
+  $out['json'] = is_array($j) ? $j : null;
+  return $out;
+}
+
+// ¿La respuesta viene del servicio de inicio de sesión de Microsoft (aunque sea un error normal suyo)?
+function od_is_sts(array $r): bool {
+  return $r['error'] === '' && $r['code'] > 0 && !od_not_from_sts($r);
+}
+
+// Petición al inicio de sesión de Microsoft probando varios «transportes» hasta que uno obtiene una respuesta de verdad de Microsoft:
+//  curl → curl sin cabecera Accept → streams de PHP. El que funcione se recuerda (backend/onedrive/net.json).
+function od_login_http(string $method, string $url, array $opt = []): array {
+  $order = ['curl', 'noaccept', 'stream'];
+  $pref = (string) (od_read_json('net.json')['transport'] ?? '');
+  if (in_array($pref, $order, true)) $order = array_values(array_unique(array_merge([$pref], $order)));
+  $last = null;
+  foreach ($order as $t) {
+    $r = $t === 'stream' ? od_http_stream($method, $url, $opt) : od_http($method, $url, $opt + ($t === 'noaccept' ? ['noaccept' => true] : []));
+    $r['transport'] = $t;
+    if (od_is_sts($r)) return $r;
+    $last = $last === null || $last['code'] === 0 ? $r : $last;       // se conserva la respuesta más informativa
+  }
+  return $last;
+}
+
+function od_remember_net(array $kv): void {
+  $n = od_read_json('net.json');
+  if (array_diff_assoc($kv, $n)) od_write_json('net.json', $kv + $n);
 }
 
 // ---------------------------------------------------------------- OAuth (código de autorización + PKCE)
@@ -135,9 +185,12 @@ function od_token_request(array $form): array {
     $bases = array_values(array_unique(array_merge($pref !== '' && in_array($pref, od_login_aliases(), true) ? [$pref] : [], od_login_aliases())));
   }
   foreach ($bases as $base) {
-    $r = od_http('POST', $base . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['form' => $form]);
-    if (!od_not_from_sts($r)) {
-      if ($base !== $c['login_base'] && $r['error'] === '') od_write_json('net.json', ['login_base' => $base]);
+    $r = od_login_http('POST', $base . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['form' => $form]);
+    if (od_is_sts($r)) {
+      $mem = [];
+      if ($base !== $c['login_base']) $mem['login_base'] = $base;
+      if (($r['transport'] ?? 'curl') !== 'curl') $mem['transport'] = $r['transport'];
+      if ($mem) od_remember_net($mem);
       break;
     }
   }
@@ -546,11 +599,15 @@ function od_diagnose(): array {
   $hdrs = fn(array $r) => implode(' | ', array_map(fn($k, $v) => $k . ': ' . mb_substr($v, 0, 40), array_keys(array_slice($r['headers'], 0, 8, true)), array_slice($r['headers'], 0, 8, true)));
   $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'cert' => true]);
   $out[] = [$r['code'] === 200 ? 'ok' : 'aviso', 'Certificado que recibe el servidor de login.microsoftonline.com: ' . ($r['cert'] ?? '') . ' · cabeceras: ' . ($hdrs($r) ?: 'ninguna')];
-  $r = od_http('GET', $cfgUrl, ['timeout' => 10, 'tls12' => true]);
-  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'Forzando TLS 1.2: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
-  $ctx = stream_context_create(['http' => ['timeout' => 10, 'ignore_errors' => true, 'method' => 'GET']]);
-  $body = ini_get('allow_url_fopen') ? @file_get_contents($cfgUrl, false, $ctx) : false;
-  $out[] = [$body !== false && stripos((string) ($http_response_header[0] ?? ''), '200') !== false ? 'ok' : 'error', 'Con el otro método de PHP (streams): ' . (ini_get('allow_url_fopen') ? (isset($http_response_header[0]) ? $http_response_header[0] : 'sin respuesta') . ($body !== false ? ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($body, 0, 80)))), 0, 80) : '') : 'allow_url_fopen está desactivado')];
+  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'tls12' => true]);
+  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'cURL forzando TLS 1.2: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
+  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'noaccept' => true]);
+  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'cURL sin cabecera Accept: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
+  $r = od_http_stream('GET', $cfgUrl, ['timeout' => 8]);
+  $out[] = [$r['code'] === 200 && !empty($r['json']['token_endpoint']) ? 'ok' : 'error', 'Streams de PHP (GET): ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
+  $r = od_http_stream('POST', $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token', ['timeout' => 8, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
+  $okS = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
+  $out[] = [$okS ? 'ok' : 'error', 'Streams de PHP (petición de token con datos falsos, debe dar un error normal de Microsoft): ' . ($okS ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
   foreach (['https://graph.microsoft.com/v1.0/' => 'Graph', 'https://login.live.com/' => 'login.live.com', 'https://www.microsoft.com/' => 'www.microsoft.com', 'https://api.github.com/' => 'api.github.com', 'https://example.com/' => 'example.com'] as $u => $name) {
     if (microtime(true) - $t0 > 40) { $out[] = ['aviso', 'Se omiten las pruebas restantes por falta de tiempo.']; break; }
     $r = od_http('GET', $u, ['timeout' => 6, 'cert' => true]);
@@ -559,11 +616,13 @@ function od_diagnose(): array {
   $mine = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token';
   $out[] = [$anyOk ? 'ok' : 'error', $anyOk ? 'Hay al menos una vía para llegar al inicio de sesión de Microsoft.' : 'Ninguna vía llega al inicio de sesión de Microsoft: el hosting lo bloquea o lo desvía.'];
 
-  $r = od_http('POST', $mine, ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
+  $r = od_login_http('POST', $mine, ['timeout' => 12, 'form' => ['client_id' => '00000000-0000-0000-0000-000000000000', 'grant_type' => 'authorization_code', 'code' => 'prueba', 'redirect_uri' => $c['redirect_uri'], 'scope' => 'Files.Read']]);
   $okPost = isset($r['json']['error']) && $r['code'] >= 400 && $r['code'] < 500;
-  $out[] = [$okPost ? 'ok' : 'error', 'Petición de token a ' . parse_url($mine, PHP_URL_HOST) . ' (con datos falsos, debe dar un error normal de Microsoft): ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
-  $pref = (string) (od_read_json('net.json')['login_base'] ?? '');
-  if ($pref !== '') $out[] = ['aviso', 'La web ya usa la dirección alternativa ' . $pref . ' porque la normal no respondía bien.'];
+  $tn = ['curl' => 'cURL', 'noaccept' => 'cURL sin Accept', 'stream' => 'streams de PHP'][$r['transport'] ?? 'curl'] ?? '';
+  $out[] = [$okPost ? 'ok' : 'error', 'Lo que hará la web al pedir el token (con datos falsos, debe dar un error normal de Microsoft) usando ' . $tn . ': ' . ($okPost ? 'HTTP ' . $r['code'] . ' · ' . $r['json']['error'] : $show($r))];
+  $net = od_read_json('net.json');
+  if (!empty($net['login_base'])) $out[] = ['aviso', 'La web ya usa la dirección alternativa ' . $net['login_base'] . ' porque la normal no respondía bien.'];
+  if (!empty($net['transport'])) $out[] = ['aviso', 'La web ya usa «' . $net['transport'] . '» para hablar con el inicio de sesión de Microsoft porque cURL recibía una respuesta que no era de Microsoft.'];
 
   $r = od_http('GET', $c['graph_base'] . '/me/drive', ['timeout' => 12]);
   $out[] = [$r['code'] === 401 ? 'ok' : 'error', 'Acceso a OneDrive (Graph, sin permiso, debe responder 401): ' . ($r['code'] === 401 ? 'HTTP 401 correcto' : $show($r))];
