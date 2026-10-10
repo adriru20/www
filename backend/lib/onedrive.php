@@ -379,6 +379,8 @@ function od_status(): array {
     'connected'  => $c !== null && od_is_connected(),
     'folder'     => $c['folder'] ?? '',
     'notes'      => count($s['files']),
+    'total'      => max(count($s['desired'] ?? []), count($s['files'])),
+    'todo'       => count($s['todo']),
     'pending'    => count($s['todo']) + ($s['phase'] === 'meta' && $s['cursor'] !== '' ? 1 : 0),
     'last_sync'  => (int) $s['last_sync'],
     'last_run'   => (int) $s['last_run'],
@@ -627,4 +629,65 @@ function od_diagnose(): array {
   $r = od_http('GET', $c['graph_base'] . '/me/drive', ['timeout' => 12]);
   $out[] = [$r['code'] === 401 ? 'ok' : 'error', 'Acceso a OneDrive (Graph, sin permiso, debe responder 401): ' . ($r['code'] === 401 ? 'HTTP 401 correcto' : $show($r))];
   return $out;
+}
+
+// ---------------------------------------------------------------- Adjuntos (imágenes, PDF, audio...)
+// La wiki los pide por nombre (como hace Obsidian con ![[foto.png]]). Se busca el archivo en el vault de OneDrive y se baja la primera
+// vez que se pide (queda en backend/onedrive/files/); si OneDrive no está conectado, se busca en el vault del servidor.
+const OD_MAX_ATTACH_BYTES = 25 * 1024 * 1024;
+
+// Archivo de OneDrive con ese nombre (sin distinguir mayúsculas); si hay varios, el de ruta menos profunda. null si no está.
+function od_find_remote_file(string $name): ?array {
+  $st = od_read_json('state.json');
+  if (empty($st['items']) || empty($st['root_id'])) return null;
+  $want = mb_strtolower($name);
+  $best = null;
+  foreach ($st['items'] as $id => $it) {
+    if ((int) $it['d'] === 1 || mb_strtolower((string) $it['n']) !== $want) continue;
+    $p = od_item_path($st['items'], (string) $id, (string) $st['root_id']);
+    if ($p === null) continue;
+    $depth = substr_count($p, '/');
+    if ($best === null || $depth < $best['depth'] || ($depth === $best['depth'] && strcmp($p, $best['path']) < 0))
+      $best = ['id' => (string) $id, 'name' => (string) $it['n'], 'path' => $p, 'ctag' => (string) $it['c'], 'size' => (int) $it['sz'], 'depth' => $depth];
+  }
+  return $best;
+}
+
+// Ruta local del adjunto (bajándolo si hace falta). ['ok'=>bool,'path'=>string,'error'=>string]
+function od_cached_file(array $f): array {
+  $dir = od_dir() . '/files';
+  if (!is_dir($dir)) @mkdir($dir, 0700, true);
+  $key = preg_replace('/[^A-Za-z0-9]/', '_', $f['id']) . '_' . substr(md5($f['ctag']), 0, 10);
+  $path = $dir . '/' . $key;
+  if (is_file($path)) return ['ok' => true, 'path' => $path, 'error' => ''];
+  if ($f['size'] > OD_MAX_ATTACH_BYTES) return ['ok' => false, 'path' => '', 'error' => 'El archivo es demasiado grande para mostrarlo en la wiki.'];
+  @set_time_limit(90);
+  $r = od_graph('/me/drive/items/' . rawurlencode($f['id']) . '/content');
+  $body = null;
+  if (in_array($r['code'], [301, 302, 303, 307, 308], true) && !empty($r['headers']['location'])) {
+    $d = od_http('GET', $r['headers']['location'], ['timeout' => 60]);
+    if ($d['code'] === 200 && $d['error'] === '') $body = $d['body'];
+  } elseif ($r['code'] === 200) { $body = $r['body']; }
+  if ($body === null || strlen($body) > OD_MAX_ATTACH_BYTES) return ['ok' => false, 'path' => '', 'error' => 'No se pudo bajar el archivo de OneDrive.'];
+  $tmp = $path . '.' . bin2hex(random_bytes(4)) . '.tmp';
+  if (@file_put_contents($tmp, $body) === false || !@rename($tmp, $path)) { @unlink($tmp); return ['ok' => false, 'path' => '', 'error' => 'No se pudo guardar el archivo.']; }
+  @chmod($path, 0600);
+  foreach (glob($dir . '/' . preg_replace('/[^A-Za-z0-9]/', '_', $f['id']) . '_*') ?: [] as $old) if ($old !== $path) @unlink($old);   // versiones anteriores
+  return ['ok' => true, 'path' => $path, 'error' => ''];
+}
+
+// Busca el archivo por nombre dentro del vault del servidor (sin entrar en carpetas ocultas). Ruta más corta primero.
+function od_local_find(string $name): ?string {
+  $base = realpath(OD_VAULT);
+  if (!$base) return null;
+  $want = mb_strtolower($name);
+  $best = null; $bestDepth = 99;
+  $it = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS),
+    fn($f) => $f->getFilename()[0] !== '.'), RecursiveIteratorIterator::LEAVES_ONLY);
+  foreach ($it as $f) {
+    if (!$f->isFile() || $f->isLink() || mb_strtolower($f->getFilename()) !== $want) continue;
+    $depth = substr_count(substr($f->getPathname(), strlen($base)), DIRECTORY_SEPARATOR);
+    if ($depth < $bestDepth) { $best = $f->getPathname(); $bestDepth = $depth; }
+  }
+  return $best;
 }

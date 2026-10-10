@@ -105,3 +105,14 @@
 .sync-btn.spin i { animation: sync-spin 1s linear infinite; }
 @keyframes sync-spin { to { transform: rotate(360deg); } }
 .sync-status { font-size: .75rem; color: var(--text-muted, #8a94a0); margin: -.35rem 0 .9rem; min-height: 1em; }
+
+/* Archivos incrustados (![[...]]) */
+#viewer img.wiki-embed-img { max-width: 100%; height: auto; border-radius: .4rem; border: 1px solid var(--surface-4); margin: .4rem 0; background: var(--surface-1); }
+#viewer .wiki-embed-media { display: block; width: 100%; max-width: 100%; margin: .6rem 0; }
+#viewer .wiki-embed-pdf { margin: .8rem 0; }
+#viewer .wiki-embed-pdf iframe { width: 100%; height: min(75vh, 700px); border: 1px solid var(--surface-4); border-radius: .4rem; background: #fff; }
+#viewer .wiki-attach { display: inline-block; margin: .2rem 0; }
+#viewer .wiki-missing { color: #e0a43a; font-size: .9rem; }
+#viewer .wiki-embed-note { margin: .9rem 0; padding: .6rem 1rem; border-left: 3px solid var(--brand-blue); background: var(--surface-1); border-radius: 0 .4rem .4rem 0; }
+#viewer .wiki-embed-note .wiki-embed-title { font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; margin-bottom: .3rem; }
+#viewer .wiki-embed-note > :last-child { margin-bottom: 0; }
