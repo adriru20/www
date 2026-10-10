@@ -1,0 +1,25 @@
+{
+  "id": "/apps/giftlist/",
+  "name": "Gift list",
+  "short_name": "Gift list",
+  "description": "Listas de regalos",
+  "start_url": "/apps/giftlist/",
+  "scope": "/apps/giftlist/",
+  "display": "standalone",
+  "background_color": "#212529",
+  "theme_color": "#FF69B4",
+  "icons": [
+    {
+      "src": "/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -92,6 +92,12 @@ OneDrive (solo notas `.md`, solo lectura). Código: `backend/lib/onedrive.php`; 
 - En la wiki, los bloques de código llevan un botón **Copiar** y las imágenes se amplían al pulsarlas (visor con ← → entre imágenes, clic para tamaño real, Esc para cerrar).
 - El despliegue **no toca** `apps/wiki/vault/` (excluido en `deploy.yml`): la fuente de verdad es OneDrive. El vault antiguo sigue en el repositorio como copia.
 
+## Instalar como aplicación (PWA)
+
+Cada sección se puede instalar por separado desde el navegador (Chrome/Edge/Android: menú → «Instalar aplicación»; iPhone: Compartir → «Añadir a pantalla de inicio»):
+la web general (`/`), Inventario, Wiki, Parking y Gift list. `frontend/head.php` elige el manifiesto según la ruta (`backend/PWA/manifest-<app>.json`, con `id` y `scope` propios).
+Solo Inventario tiene Service Worker (funciona sin conexión con lo ya visitado); las demás se instalan igual pero necesitan conexión.
+
 ## Pendientes (ideas aparcadas)
 - **Imágenes borradas del inventario que «reaparecen» en cada despliegue** (apuntado, hacer junto con la papelera): 14 imágenes del inventario están dentro del repositorio
   (`apps/inventario/img/`, salvo `.htaccess`) y el despliegue sube todos los archivos del repositorio en cada ejecución, así que las que se borren en el servidor vuelven.
