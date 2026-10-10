@@ -44,6 +44,7 @@ $diag = $_SESSION['od_diag'] ?? null;
 unset($_SESSION['od_diag']);
 $ago = fn(int $t) => $t ? (time() - $t < 90 ? 'hace un momento' : 'hace ' . (time() - $t < 5400 ? round((time() - $t) / 60) . ' min' : (time() - $t < 172800 ? round((time() - $t) / 3600) . ' h' : round((time() - $t) / 86400) . ' días'))) : 'nunca';
 $page_title = 'OneDrive';
+$page_scripts = ['/src/onedrive/onedrive.js'];
 ?>
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
@@ -74,9 +75,9 @@ $page_title = 'OneDrive';
           <div><div class="text-muted small">Conexión</div>
             <?php if ($st['connected']): ?><span class="badge bg-success">Conectado</span><?php else: ?><span class="badge bg-warning text-dark">Sin conectar</span><?php endif; ?></div>
           <div><div class="text-muted small">Carpeta en OneDrive</div><code><?= e($st['folder']) ?></code></div>
-          <div><div class="text-muted small">Notas en el servidor</div><strong><?= (int) $st['notes'] ?></strong></div>
-          <div><div class="text-muted small">Última sincronización completa</div><?= e($ago($st['last_sync'])) ?></div>
-          <div><div class="text-muted small">Último cambio de notas</div><?= e($ago($st['last_change'])) ?></div>
+          <div><div class="text-muted small">Notas en el servidor</div><strong id="odNotes"><?= (int) $st['notes'] ?></strong></div>
+          <div><div class="text-muted small">Última sincronización completa</div><span id="odLast"><?= e($ago($st['last_sync'])) ?></span></div>
+          <div><div class="text-muted small">Último cambio de notas</div><span id="odChange"><?= e($ago($st['last_change'])) ?></span></div>
           <?php if ($st['pending'] > 0): ?><div><div class="text-muted small">Pendientes</div><span class="badge bg-info text-dark"><?= (int) $st['pending'] ?></span></div><?php endif; ?>
         </div>
         <?php if ($st['last_error'] !== ''): ?><div class="alert alert-warning small"><strong>Último aviso:</strong> <?= e($st['last_error']) ?></div><?php endif; ?>
@@ -85,11 +86,18 @@ $page_title = 'OneDrive';
           <?php if (!$st['connected']): ?>
             <form method="POST"><?= csrf_input() ?><input type="hidden" name="action" value="connect"><button class="btn btn-accent" type="submit"><i class="fa-brands fa-microsoft"></i> Conectar con OneDrive</button></form>
           <?php else: ?>
-            <form method="POST"><?= csrf_input() ?><input type="hidden" name="action" value="sync"><button class="btn btn-primary" type="submit"><i class="fa-solid fa-rotate"></i> Sincronizar ahora</button></form>
-            <form method="POST" onsubmit="return confirm('Se vuelve a comprobar toda la carpeta de OneDrive desde cero. ¿Seguir?');"><?= csrf_input() ?><input type="hidden" name="action" value="reset"><button class="btn btn-outline-secondary" type="submit">Sincronización completa desde cero</button></form>
+            <!-- Sin JavaScript funcionan como formularios normales (un tramo por pulsación); con JavaScript se repiten solos hasta terminar -->
+            <form method="POST"><?= csrf_input() ?><input type="hidden" name="action" value="sync"><button class="btn btn-primary" type="submit" data-od-run="sync"><i class="fa-solid fa-rotate"></i> Sincronizar ahora</button></form>
+            <form method="POST"><?= csrf_input() ?><input type="hidden" name="action" value="reset"><button class="btn btn-outline-secondary" type="submit" data-od-run="reset" data-od-confirm="Se vuelve a comprobar toda la carpeta de OneDrive desde cero. ¿Seguir?">Sincronización completa desde cero</button></form>
             <form method="POST" onsubmit="return confirm('Se borran del servidor las notas .md que no estén en OneDrive (restos del vault antiguo). ¿Seguir?');"><?= csrf_input() ?><input type="hidden" name="action" value="prune"><button class="btn btn-outline-secondary" type="submit">Limpiar notas antiguas del servidor</button></form>
             <form method="POST" onsubmit="return confirm('¿Desconectar OneDrive?');"><?= csrf_input() ?><input type="hidden" name="action" value="disconnect"><button class="btn btn-outline-danger" type="submit">Desconectar</button></form>
           <?php endif; ?>
+        </div>
+        <div id="odProgress" class="d-none mt-3" data-csrf="<?= e(csrf_token()) ?>" aria-live="polite">
+          <div class="d-flex justify-content-between small mb-1"><span id="odText"></span></div>
+          <div class="progress" role="progressbar" aria-label="Progreso de la sincronización"><div id="odBar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div></div>
+          <p id="odNote" class="small text-warning mt-2 mb-0 d-none"><i class="fa-solid fa-triangle-exclamation"></i> No cierres ni recargues esta página hasta que termine.</p>
+          <div id="odResult" class="d-none" role="status"></div>
         </div>
         <p class="small text-muted mt-3 mb-0">La wiki se actualiza sola al abrirla si han pasado más de <?= (int) $st['refresh_minutes'] ?> minutos desde la última comprobación. Solo se descargan las notas <code>.md</code>.</p>
       </div></div>
