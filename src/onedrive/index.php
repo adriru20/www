@@ -25,6 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       session_start();
       flash_add($r['message'] . ($r['pending'] > 0 ? ' Quedan notas por descargar: pulsa de nuevo «Sincronizar ahora».' : '') . ($r['changed'] ? " ({$r['changed']} cambio(s))" : ''), $r['state'] === 'synced' ? 'success' : 'warning');
       break;
+    case 'diagnose':
+      $_SESSION['od_diag'] = od_diagnose();
+      break;
     case 'prune':
       [$n, $err] = od_prune_untracked();
       flash_add($err !== '' ? $err : ($n . ' nota(s) antigua(s) borrada(s) del servidor.'), $err !== '' ? 'warning' : 'success');
@@ -37,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $st = od_status();
+$diag = $_SESSION['od_diag'] ?? null;
+unset($_SESSION['od_diag']);
 $ago = fn(int $t) => $t ? (time() - $t < 90 ? 'hace un momento' : 'hace ' . (time() - $t < 5400 ? round((time() - $t) / 60) . ' min' : (time() - $t < 172800 ? round((time() - $t) / 3600) . ' h' : round((time() - $t) / 86400) . ' días'))) : 'nunca';
 $page_title = 'OneDrive';
 ?>
@@ -87,6 +92,20 @@ $page_title = 'OneDrive';
           <?php endif; ?>
         </div>
         <p class="small text-muted mt-3 mb-0">La wiki se actualiza sola al abrirla si han pasado más de <?= (int) $st['refresh_minutes'] ?> minutos desde la última comprobación. Solo se descargan las notas <code>.md</code>.</p>
+      </div></div>
+    <?php endif; ?>
+    <?php if ($cfg): ?>
+      <div class="card mb-3"><div class="card-body">
+        <h2 class="h6">Diagnóstico</h2>
+        <p class="small text-muted">Comprueba, sin usar ningún secreto, que el servidor llega a Microsoft y que la configuración tiene buena pinta.</p>
+        <form method="POST" class="mb-2"><?= csrf_input() ?><input type="hidden" name="action" value="diagnose"><button class="btn btn-sm btn-outline-secondary" type="submit"><i class="fa-solid fa-stethoscope"></i> Probar conexión con Microsoft</button></form>
+        <?php if ($diag): ?>
+          <ul class="list-unstyled small mb-0">
+            <?php foreach ($diag as [$estado, $texto]): ?>
+              <li class="mb-1"><span class="badge <?= $estado === 'ok' ? 'bg-success' : ($estado === 'aviso' ? 'bg-warning text-dark' : 'bg-danger') ?>"><?= $estado === 'ok' ? 'OK' : ($estado === 'aviso' ? 'Aviso' : 'Error') ?></span> <?= e($texto) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
       </div></div>
     <?php endif; ?>
   </main>
