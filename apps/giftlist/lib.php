@@ -10,14 +10,34 @@ function gift_user(string $id): ?array {
   return $r ? ($r->fetch_assoc() ?: null) : null;
 }
 
-// Resto de usuarios con su número de regalos
+// ¿Existen ya las columnas de grupos Amigos/Familia? (las crea la migración 005). Si no, todos ven a todos como antes.
+function gift_groups_ready(): bool {
+  static $ready = null;
+  return $ready ??= (db_query('SELECT es_amigo, es_familiar FROM login_user LIMIT 1') !== false);
+}
+
+// Grupos de un usuario: ['amigo' => bool, 'familiar' => bool]
+function gift_groups(string $id): array {
+  $r = gift_groups_ready() ? db_query('SELECT es_amigo, es_familiar FROM login_user WHERE id = ?', 's', [$id]) : false;
+  $r = $r ? $r->fetch_assoc() : null;
+  return ['amigo' => (int) ($r['es_amigo'] ?? 0) === 1, 'familiar' => (int) ($r['es_familiar'] ?? 0) === 1];
+}
+
+// ¿Puedo ver la lista de esa persona? La mía siempre; el admin, todas; el resto, solo las de quien comparte grupo (amigos/familia).
+function gift_can_see(string $myId, string $ownerId): bool {
+  if ($ownerId === $myId || is_admin() || !gift_groups_ready()) return true;
+  $me = gift_groups($myId); $o = gift_groups($ownerId);
+  return ($me['amigo'] && $o['amigo']) || ($me['familiar'] && $o['familiar']);
+}
+
+// Resto de usuarios visibles para mí, con su número de regalos
 function gift_people(string $myId): array {
   $counts = [];
   foreach (db_rows(db_query('SELECT user_id, COUNT(*) AS n FROM gift_items GROUP BY user_id')) as $r) $counts[$r['user_id']] = (int) $r['n'];
   // Los usuarios ocultos (migración 004) no salen en las listas; si aún no existe la columna se muestran todos
   $people = db_query('SELECT id, user FROM login_user WHERE id != ? AND oculto = 0 ORDER BY user ASC', 's', [$myId])
          ?: db_query('SELECT id, user FROM login_user WHERE id != ? ORDER BY user ASC', 's', [$myId]);
-  $people = db_rows($people);
+  $people = array_values(array_filter(db_rows($people), fn($p) => gift_can_see($myId, $p['id'])));
   foreach ($people as &$p) $p['n'] = $counts[$p['id']] ?? 0;
   return ['people' => $people, 'mine' => $counts[$myId] ?? 0];
 }
@@ -80,7 +100,7 @@ function gift_handle_actions(string $myId): void {
   $writes = in_array($_POST['action'] ?? '', ['add_item', 'edit_item', 'delete_item'], true);
   if ($writes && !$mine) {
     $targetUser = gift_user($target);
-    if (!gift_can_manage() || !$targetUser) {
+    if (!gift_can_manage() || !$targetUser || !gift_can_see($myId, $target)) {
       flash_add($targetUser ? 'No tienes permiso para modificar la lista de otras personas.' : 'No existe esa lista.', 'warning');
       header('Location: index.php');
       exit();
@@ -120,7 +140,7 @@ function gift_handle_actions(string $myId): void {
                                              FROM gift_items g JOIN login_user o ON o.id = g.user_id LEFT JOIN login_user b ON b.id = g.purchased_by
                                              WHERE g.id = ?', 'i', [$id]) : false;
       $g = $g ? $g->fetch_assoc() : null;
-      if (!$g) { flash_add('Ese regalo ya no existe o la función aún no está activada.', 'warning'); break; }
+      if (!$g || !gift_can_see($myId, $g['user_id'])) { flash_add('Ese regalo ya no existe o la función aún no está activada.', 'warning'); break; }
       $redirect = 'index.php?view=' . urlencode($g['user_id']) . (($_POST['estado'] ?? '') === 'comprados' ? '&estado=comprados' : '');   // vuelve a la pestaña en que estaba
 
       if ($_POST['action'] === 'mark_bought') {

@@ -10,6 +10,10 @@
     form.querySelectorAll('[data-perm-list] input[type=checkbox]').forEach((c) => { c.checked = perms.includes(c.value); });
     syncSubs(form);
   }
+  // Grupos Amigo / Familiar
+  function setGroups(form, u) {
+    form.querySelectorAll('[data-group]').forEach((c) => { c.checked = !!(u && u[c.dataset.group]); });
+  }
   // Los subpermisos solo se pueden marcar si la sección está marcada
   function syncSubs(form) {
     form.querySelectorAll('[data-sub-of]').forEach((sub) => {
@@ -61,6 +65,7 @@
       const f = $('modalNew').querySelector('form'); f.reset();
       f.querySelector('[data-role-select]').value = 'visitante';
       setPerms(f, []); syncRole(f);   // por defecto, ninguna sección
+      setGroups(f, {});
       return modal('modalNew').show();
     }
     const edit = t.closest('[data-user-edit]');
@@ -69,7 +74,7 @@
       const f = $('modalEdit').querySelector('form');
       $('u_id').value = edit.dataset.userEdit; $('u_name').textContent = u.user;
       f.querySelector('[data-role-select]').value = u.role;
-      setPerms(f, u.perms); syncRole(f);
+      setPerms(f, u.perms); syncRole(f); setGroups(f, u);
       return modal('modalEdit').show();
     }
     const pass = t.closest('[data-user-pass]');

@@ -18,6 +18,12 @@ if (!$owner) {                 // lista de un usuario que no existe
   exit();
 }
 
+if (!gift_can_see($my_id, $view_id)) {   // no comparte grupo (amigos/familia) con esa persona
+  flash_add('No tienes acceso a esa lista.', 'warning');
+  header('Location: index.php');
+  exit();
+}
+
 $people = gift_people($my_id);
 $can_write = $is_mine || gift_can_manage();            // añadir/editar/borrar en esta lista
 $show_buy = !$is_mine && gift_purchase_ready();       // botones de "comprado" (solo en listas ajenas)

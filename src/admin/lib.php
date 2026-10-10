@@ -9,9 +9,22 @@ function admin_hidden_ready(): bool {
   return $ready ??= (db_query('SELECT oculto FROM login_user LIMIT 1') !== false);
 }
 
+// ¿Existen ya las columnas es_amigo/es_familiar? (las crea la migración 005)
+function admin_groups_ready(): bool {
+  static $ready = null;
+  return $ready ??= (db_query('SELECT es_amigo, es_familiar FROM login_user LIMIT 1') !== false);
+}
+
+// Guarda los grupos marcados en el formulario (solo si ya existen las columnas)
+function admin_save_groups(string $userId): void {
+  if (!admin_groups_ready()) return;
+  db_exec('UPDATE login_user SET es_amigo = ?, es_familiar = ? WHERE id = ?', 'iis', [!empty($_POST['amigo']) ? 1 : 0, !empty($_POST['familiar']) ? 1 : 0, $userId]);
+}
+
 function admin_users(): array {
   $hid = admin_hidden_ready() ? 'oculto' : '0 AS oculto';
-  $users = db_rows(db_query("SELECT id, user, permission, active, $hid, created_at, last_login FROM login_user ORDER BY user ASC"));
+  $grp = admin_groups_ready() ? 'es_amigo, es_familiar' : '0 AS es_amigo, 0 AS es_familiar';
+  $users = db_rows(db_query("SELECT id, user, permission, active, $hid, $grp, created_at, last_login FROM login_user ORDER BY user ASC"));
   $perms = [];
   foreach (db_rows(db_query('SELECT user_id, perm FROM user_permissions')) as $r) $perms[$r['user_id']][] = $r['perm'];
   foreach ($users as &$u) $u['perms'] = $perms[$u['id']] ?? [];
@@ -65,6 +78,7 @@ function admin_handle_actions(string $me): void {
       $r = db_exec('INSERT INTO login_user (id, user, pass, permission) VALUES (?, ?, ?, ?)', 'ssss', [$newId, $name, password_hash($pass, PASSWORD_DEFAULT), $role]);
       if (!$r['ok']) { flash_add('No se pudo crear el usuario.', 'danger'); break; }
       if ($role !== 'admin') admin_save_perms($newId, admin_clean_perms($_POST['perms'] ?? []));
+      admin_save_groups($newId);
       flash_add("Usuario «{$name}» creado.");
       break;
 
@@ -77,6 +91,7 @@ function admin_handle_actions(string $me): void {
       if ($u['permission'] === 'admin' && $role !== 'admin' && admin_count_admins($id) < 1) { flash_add('Tiene que quedar al menos un administrador.', 'warning'); break; }
       db_exec('UPDATE login_user SET permission = ? WHERE id = ?', 'ss', [$role, $id]);
       admin_save_perms($id, $role === 'admin' ? [] : admin_clean_perms($_POST['perms'] ?? []));
+      admin_save_groups($id);
       flash_add("Permisos de «{$u['user']}» actualizados.");
       break;
 

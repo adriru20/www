@@ -12,6 +12,7 @@ $users = $ready ? admin_users() : [];
 $registry = app_registry();
 
 // Pestañas: usuarios activos / inactivos
+$can_groups = $ready && admin_groups_ready();   // ¿están las columnas Amigo/Familiar? (migración 005)
 $can_hide = $ready && admin_hidden_ready();   // ¿está la columna «oculto»? (migración 004)
 $ver = in_array($_GET['ver'] ?? '', ['inactivos', 'ocultos'], true) ? $_GET['ver'] : 'activos';
 if ($ver === 'ocultos' && !$can_hide) $ver = 'activos';
@@ -29,7 +30,7 @@ $shown = array_values(array_filter($users, fn($u) => match ($ver) {
 $page_title   = 'Usuarios';
 $page_scripts = ['/src/admin/usuarios.js'];
 $data = [];
-foreach ($users as $u) $data[$u['id']] = ['user' => $u['user'], 'role' => $u['permission'], 'perms' => $u['perms'], 'active' => (int) $u['active']];
+foreach ($users as $u) $data[$u['id']] = ['user' => $u['user'], 'role' => $u['permission'], 'perms' => $u['perms'], 'active' => (int) $u['active'], 'amigo' => (int) $u['es_amigo'], 'familiar' => (int) $u['es_familiar']];
 $presets = ['admin' => [], 'user' => role_preset_subs('user'), 'visitante' => role_preset_subs('visitante')];
 $roleBadge = ['admin' => 'bg-danger', 'user' => 'bg-primary', 'visitante' => 'bg-secondary'];
 $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
@@ -63,6 +64,9 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
       <?php if (!$can_hide): ?>
         <div class="alert alert-secondary small py-2">Para poder <strong>ocultar usuarios</strong> de las listas, ejecuta en phpMyAdmin el fichero <code>backend/database/migraciones/004_usuarios_ocultos.sql</code> y recarga esta página.</div>
       <?php endif; ?>
+      <?php if (!$can_groups): ?>
+        <div class="alert alert-secondary small py-2">Para poder marcar a cada usuario como <strong>amigo</strong> y/o <strong>familiar</strong> (y que en Gift list cada uno vea solo a los suyos), ejecuta en phpMyAdmin el fichero <code>backend/database/migraciones/005_grupos_amigos_familia.sql</code> y recarga esta página.</div>
+      <?php endif; ?>
       <?php if (!$shown): ?>
         <div class="empty-state"><p><?= match ($ver) {
           'ocultos'   => 'No hay usuarios ocultos. Los que ocultes no saldrán en las listas de la web y los gestionarás desde aquí.',
@@ -81,6 +85,11 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
                     <span class="badge <?= $roleBadge[$u['permission']] ?? 'bg-secondary' ?>"><?= e(ROLES[$u['permission']] ?? $u['permission']) ?></span>
                     <?php if ($off): ?><span class="badge bg-dark border">Desactivado</span><?php endif; ?>
                     <?php if ($isHidden($u)): ?><span class="badge bg-dark border"><i class="fa-solid fa-eye-slash"></i> Oculto</span><?php endif; ?>
+                    <?php if ($can_groups): ?>
+                      <?php if ((int) $u['es_amigo']): ?><span class="badge bg-info text-dark"><i class="fa-solid fa-user-group"></i> Amigo</span><?php endif; ?>
+                      <?php if ((int) $u['es_familiar']): ?><span class="badge bg-success"><i class="fa-solid fa-house-user"></i> Familiar</span><?php endif; ?>
+                      <?php if (!(int) $u['es_amigo'] && !(int) $u['es_familiar']): ?><span class="badge bg-dark border text-warning" title="No ve a nadie en Gift list (los administradores ven a todos)">Sin grupo</span><?php endif; ?>
+                    <?php endif; ?>
                   </div>
                   <small class="text-muted text-end">Último acceso<br><?= e($fmt($u['last_login'])) ?></small>
                 </div>
@@ -169,6 +178,12 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
         <div class="form-label small text-muted mb-1">Secciones a las que puede entrar</div>
         <?php $checklist('n_'); ?>
         <p class="small text-muted mt-2 mb-0 d-none" data-admin-note>Los administradores tienen acceso a todo y pueden gestionar usuarios.</p>
+        <?php if ($can_groups): ?>
+        <div class="mt-3"><div class="form-label small text-muted mb-1">Grupo (en Gift list ve a quienes compartan grupo)</div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="amigo" value="1" id="n_amigo" data-group="amigo"><label class="form-check-label" for="n_amigo">Amigo</label></div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="familiar" value="1" id="n_familiar" data-group="familiar"><label class="form-check-label" for="n_familiar">Familiar</label></div>
+        </div>
+        <?php endif; ?>
       </div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-accent">Crear usuario</button></div>
     </form></div></div>
@@ -184,6 +199,12 @@ $fmt = fn($d) => $d ? date('d/m/Y H:i', strtotime($d)) : '—';
         <div class="form-label small text-muted mb-1">Secciones a las que puede entrar</div>
         <?php $checklist('u_'); ?>
         <p class="small text-muted mt-2 mb-0 d-none" data-admin-note>Los administradores tienen acceso a todo y pueden gestionar usuarios.</p>
+        <?php if ($can_groups): ?>
+        <div class="mt-3"><div class="form-label small text-muted mb-1">Grupo (en Gift list ve a quienes compartan grupo)</div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="amigo" value="1" id="u_amigo" data-group="amigo"><label class="form-check-label" for="u_amigo">Amigo</label></div>
+          <div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="familiar" value="1" id="u_familiar" data-group="familiar"><label class="form-check-label" for="u_familiar">Familiar</label></div>
+        </div>
+        <?php endif; ?>
       </div>
       <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar cambios</button></div>
     </form></div></div>
