@@ -67,11 +67,13 @@
   background: var(--surface-1); padding: 1rem; border-radius: .6rem;
   overflow-x: auto; border: 1px solid var(--surface-4); margin: 1rem 0;
 }
+#viewer .code-block { position: relative; margin: 1rem 0; }
+#viewer .code-block pre { margin: 0; }
 #viewer code {
   font-family: 'Courier New', Courier, monospace;
   background: var(--surface-1); padding: 2px 5px; border-radius: 4px; color: var(--brand-pink);
 }
-#viewer pre code { padding: 0; background: none; color: inherit; }
+#viewer pre code { padding: 0; background: none; color: inherit; tab-size: 4; }
 
 #viewer table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: .95rem; display: block; overflow-x: auto; }
 #viewer th, #viewer td { border: 1px solid var(--surface-4); padding: .7rem .9rem; text-align: left; }
@@ -116,3 +118,38 @@
 #viewer .wiki-embed-note { margin: .9rem 0; padding: .6rem 1rem; border-left: 3px solid var(--brand-blue); background: var(--surface-1); border-radius: 0 .4rem .4rem 0; }
 #viewer .wiki-embed-note .wiki-embed-title { font-size: .8rem; text-transform: uppercase; letter-spacing: .5px; margin-bottom: .3rem; }
 #viewer .wiki-embed-note > :last-child { margin-bottom: 0; }
+
+/* Botón «Copiar» de los bloques de código: aparece al pasar el ratón (siempre visible en pantallas táctiles) */
+#viewer .code-copy {
+  position: absolute; top: .4rem; right: .4rem; display: inline-flex; align-items: center; gap: .35rem;
+  padding: .2rem .55rem; font-size: .75rem; line-height: 1.2; color: var(--text-main);
+  background: var(--surface-3); border: 1px solid var(--surface-4); border-radius: .4rem; cursor: pointer;
+  opacity: 0; transition: opacity .15s, background .15s, border-color .15s;
+}
+#viewer .code-block:hover .code-copy, #viewer .code-copy:focus-visible, #viewer .code-copy.done { opacity: 1; }
+#viewer .code-copy:hover { background: var(--surface-4); border-color: var(--brand-blue); }
+#viewer .code-copy.done { border-color: #2fb36d; color: #7be3a8; }
+#viewer .code-copy.done.fail { border-color: #d9534f; color: #f19a97; }
+@media (hover: none) { #viewer .code-copy { opacity: .9; } }
+
+/* Imágenes ampliables */
+#viewer img { cursor: zoom-in; }
+#viewer img:focus-visible { outline: 2px solid var(--brand-pink); outline-offset: 2px; }
+.wiki-lb-open-body { overflow: hidden; }
+.wiki-lb { position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column; background: rgba(8, 10, 14, .97); }
+.wiki-lb[hidden] { display: none; }
+.wiki-lb-bar { display: flex; align-items: center; gap: .9rem; padding: .6rem 1rem; color: #fff; font-size: .9rem; flex: 0 0 auto; }
+.wiki-lb-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); }
+.wiki-lb-count { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.wiki-lb-open { color: var(--brand-blue); text-decoration: none; white-space: nowrap; }
+.wiki-lb-open:hover { color: var(--brand-pink); text-decoration: underline; }
+.wiki-lb-close { background: var(--surface-3); color: #fff; border: 1px solid var(--surface-4); border-radius: .4rem; min-width: 2.2rem; min-height: 2.2rem; cursor: pointer; font-size: 1rem; }
+.wiki-lb-close:hover { border-color: var(--brand-pink); }
+.wiki-lb-stage { flex: 1; min-height: 0; overflow: auto; display: flex; padding: .5rem 3.2rem 1rem; touch-action: pinch-zoom pan-x pan-y; }
+.wiki-lb-stage img { margin: auto; max-width: 100%; max-height: 100%; object-fit: contain; border-radius: .3rem; cursor: zoom-in; background: var(--surface-1); }
+.wiki-lb-stage.actual img { max-width: none; max-height: none; cursor: zoom-out; }
+.wiki-lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 2.6rem; height: 4rem; background: rgba(255, 255, 255, .08); color: #fff; border: 0; border-radius: .5rem; font-size: 2rem; line-height: 1; cursor: pointer; z-index: 1; }
+.wiki-lb-nav:hover { background: rgba(255, 51, 133, .45); }
+.wiki-lb-prev { left: .4rem; } .wiki-lb-next { right: .4rem; }
+.wiki-lb.single .wiki-lb-nav { display: none; }
+@media (max-width: 575.98px) { .wiki-lb-stage { padding: .25rem .25rem .75rem; } .wiki-lb-nav { opacity: .7; width: 2.2rem; } }

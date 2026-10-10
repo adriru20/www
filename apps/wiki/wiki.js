@@ -77,7 +77,9 @@
   // Convierte los huecos de Obsidian fuera de bloques de código (``` y `código`)
   function convertWikiSyntax(markdown) {
     return markdown.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~|`[^`\n]*`)/g).map((part, i) => {
-      if (i % 2 === 1) return part;
+      if (i % 2 === 1) {            // bloque de código: los tabuladores iniciales se protegen (marked los cambia por espacios) y se restauran al pintar
+        return /^(```|~~~)/.test(part) ? part.replace(/^( *)(\t+)/gm, (m, sp, tabs) => sp + '\uE000'.repeat(tabs.length)) : part;
+      }
       return part.replace(/(!?)\[\[(!?)(.*?)\]\]/g, (m, bang, bang2, inner) => wikiToHtml(!!(bang || bang2), inner));
     }).join('');
   }
@@ -110,8 +112,139 @@
     return start < 0 ? markdown : lines.slice(start).join('\n');
   }
 
+  // ---- Botón «Copiar» en los bloques de código (el bloque se envuelve para que el botón no se desplace con el scroll horizontal)
+  function decorateCode(root) {
+    root.querySelectorAll('pre code').forEach((c) => { if (c.textContent.includes('\uE000')) c.innerHTML = c.innerHTML.replace(/\uE000/g, '\t'); });
+    root.querySelectorAll('pre').forEach((pre) => {
+      if (pre.parentElement && pre.parentElement.classList.contains('code-block')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'code-block';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.title = 'Copiar el código';
+      btn.setAttribute('aria-label', 'Copiar el código');
+      btn.innerHTML = '<i class="fa-regular fa-copy" aria-hidden="true"></i><span>Copiar</span>';
+      wrap.appendChild(btn);
+    });
+  }
+
+  async function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+    } catch (e) { /* se prueba el método antiguo */ }
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+
+  viewer.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.code-copy');
+    if (!btn) return;
+    const pre = btn.parentElement.querySelector('pre');
+    const text = (pre.querySelector('code') || pre).textContent.replace(/\n$/, '');
+    const ok = await copyText(text);
+    const label = btn.querySelector('span');
+    btn.classList.add('done');
+    btn.classList.toggle('fail', !ok);
+    label.textContent = ok ? '¡Copiado!' : 'No se pudo';
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => { btn.classList.remove('done', 'fail'); label.textContent = 'Copiar'; }, 1600);
+  });
+
+  // ---- Ampliar imágenes al pulsarlas (visor a pantalla completa; ← → para pasar de una a otra, clic en la imagen para tamaño real)
+  let lb = null, lbImgs = [], lbIdx = 0, lbOpener = null;
+  const lbEl = (sel) => lb.querySelector(sel);
+
+  function lbBuild() {
+    lb = document.createElement('div');
+    lb.className = 'wiki-lb';
+    lb.hidden = true;
+    lb.setAttribute('role', 'dialog');
+    lb.setAttribute('aria-modal', 'true');
+    lb.setAttribute('aria-label', 'Imagen ampliada');
+    lb.innerHTML = '<div class="wiki-lb-bar"><span class="wiki-lb-count"></span><span class="wiki-lb-name"></span>'
+      + '<a class="wiki-lb-open" target="_blank" rel="noopener noreferrer">Abrir original</a>'
+      + '<button type="button" class="wiki-lb-close" aria-label="Cerrar">✕</button></div>'
+      + '<button type="button" class="wiki-lb-nav wiki-lb-prev" aria-label="Imagen anterior">‹</button>'
+      + '<div class="wiki-lb-stage"><img alt=""></div>'
+      + '<button type="button" class="wiki-lb-nav wiki-lb-next" aria-label="Imagen siguiente">›</button>';
+    document.body.appendChild(lb);
+    lbEl('.wiki-lb-close').addEventListener('click', lbClose);
+    lbEl('.wiki-lb-prev').addEventListener('click', () => lbShow(lbIdx - 1));
+    lbEl('.wiki-lb-next').addEventListener('click', () => lbShow(lbIdx + 1));
+    lbEl('.wiki-lb-stage').addEventListener('click', (e) => {
+      if (e.target.tagName === 'IMG') { lbEl('.wiki-lb-stage').classList.toggle('actual'); } else { lbClose(); }   // fuera de la imagen: cerrar
+    });
+  }
+
+  function lbShow(i) {
+    if (!lbImgs.length) return;
+    lbIdx = (i + lbImgs.length) % lbImgs.length;
+    const src = lbImgs[lbIdx];
+    const img = lbEl('.wiki-lb-stage img');
+    lbEl('.wiki-lb-stage').classList.remove('actual');
+    img.src = src.currentSrc || src.src;
+    img.alt = src.alt || '';
+    lbEl('.wiki-lb-name').textContent = src.dataset.name || src.alt || '';
+    lbEl('.wiki-lb-open').href = src.currentSrc || src.src;
+    lbEl('.wiki-lb-count').textContent = lbImgs.length > 1 ? (lbIdx + 1) + ' / ' + lbImgs.length : '';
+    lb.classList.toggle('single', lbImgs.length < 2);
+  }
+
+  function lbOpen(img) {
+    if (!lb) lbBuild();
+    lbImgs = [...viewer.querySelectorAll('img')].filter((i) => !i.closest('a') && (i.naturalWidth > 0 || /\.svg/i.test(i.src)));
+    if (!lbImgs.includes(img)) lbImgs = [img];
+    lbOpener = document.activeElement;
+    lb.hidden = false;
+    document.body.classList.add('wiki-lb-open-body');
+    lbShow(lbImgs.indexOf(img));
+    lbEl('.wiki-lb-close').focus();
+  }
+
+  function lbClose() {
+    if (!lb || lb.hidden) return;
+    lb.hidden = true;
+    lbEl('.wiki-lb-stage img').removeAttribute('src');
+    document.body.classList.remove('wiki-lb-open-body');
+    if (lbOpener && lbOpener.focus) lbOpener.focus();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (lb && !lb.hidden) {
+      if (e.key === 'Escape') { e.preventDefault(); lbClose(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); lbShow(lbIdx - 1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); lbShow(lbIdx + 1); }
+      else if (e.key === 'Tab') {                       // el foco se queda dentro del visor
+        const f = [...lb.querySelectorAll('button:not([hidden]), a[href]')].filter((x) => x.offsetParent !== null);
+        if (f.length) { const first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } }
+      }
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('#viewer img[tabindex]')) { e.preventDefault(); lbOpen(e.target); }
+  });
+
+  viewer.addEventListener('click', (e) => {
+    const img = e.target.closest('img');
+    if (img && !img.closest('a') && (img.naturalWidth > 0 || /\.svg/i.test(img.src))) lbOpen(img);
+  });
+
   // Rellena las notas incrustadas (![[Nota]]) y marca los archivos que no existen
   async function hydrateEmbeds(root, depth) {
+    decorateCode(root);
+    root.querySelectorAll('img').forEach((img) => {
+      if (img.closest('a')) return;
+      img.tabIndex = 0; img.setAttribute('role', 'button'); img.setAttribute('aria-label', 'Ampliar imagen: ' + (img.dataset.name || img.alt || ''));
+    });
     root.querySelectorAll('img.wiki-embed-img').forEach((img) => {
       img.addEventListener('error', () => {
         const span = document.createElement('span');
