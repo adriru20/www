@@ -80,11 +80,14 @@ function od_http(string $method, string $url, array $opt = []): array {
       return strlen($line);
     },
   ]);
+  if (!empty($opt['tls12'])) curl_setopt($h, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+  if (!empty($opt['cert'])) curl_setopt($h, CURLOPT_CERTINFO, true);
   if ($body !== null) curl_setopt($h, CURLOPT_POSTFIELDS, $body);
   $res = curl_exec($h);
   if ($res === false) $out['error'] = curl_error($h);
   $out['code'] = (int) curl_getinfo($h, CURLINFO_RESPONSE_CODE);
   $out['ip'] = (string) curl_getinfo($h, CURLINFO_PRIMARY_IP);
+  if (!empty($opt['cert'])) { $ci = curl_getinfo($h, CURLINFO_CERTINFO); $out['cert'] = (string) ($ci[0]['Issuer'] ?? ''); }
   curl_close($h);
   $out['body'] = is_string($res) ? $res : '';
   $j = json_decode($out['body'], true);
@@ -511,6 +514,8 @@ function od_prune_untracked(): array {
 
 // Diagnóstico de la conexión (no muestra ningún secreto). Devuelve una lista de [estado 'ok'|'aviso'|'error', texto]
 function od_diagnose(): array {
+  @set_time_limit(90);
+  $t0 = microtime(true);
   $c = od_config();
   $out = [];
   $out[] = ['ok', 'PHP ' . PHP_VERSION . ' · cURL ' . (function_exists('curl_version') ? curl_version()['version'] . ' · ' . (curl_version()['ssl_version'] ?? '') : 'NO DISPONIBLE')];
@@ -529,12 +534,27 @@ function od_diagnose(): array {
   $anyOk = false;
   foreach (od_login_aliases() as $base) {
     foreach ([['IPv4 + HTTP/1.1', true, true], ['IPv6/auto + HTTP/2', false, false]] as [$label, $v4, $h11]) {
-      $r = od_http('GET', $base . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 10, 'v4' => $v4, 'h11' => $h11]);
+      $r = od_http('GET', $base . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration', ['timeout' => 6, 'v4' => $v4, 'h11' => $h11]);
       $good = $r['code'] === 200 && !empty($r['json']['token_endpoint']);
       $anyOk = $anyOk || $good;
       $srv = ($r['headers']['server'] ?? '') !== '' ? ' · servidor: ' . $r['headers']['server'] : '';
       $out[] = [$good ? 'ok' : 'error', preg_replace('#^https://#', '', $base) . ' [' . $label . '] → ' . ($good ? 'HTTP 200' : $show($r)) . ' · IP ' . ($r['ip'] ?: '—') . $srv];
     }
+  }
+  // ¿Quién responde de verdad? Certificado, cabeceras y comparación con otros caminos y otras páginas
+  $cfgUrl = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/v2.0/.well-known/openid-configuration';
+  $hdrs = fn(array $r) => implode(' | ', array_map(fn($k, $v) => $k . ': ' . mb_substr($v, 0, 40), array_keys(array_slice($r['headers'], 0, 8, true)), array_slice($r['headers'], 0, 8, true)));
+  $r = od_http('GET', $cfgUrl, ['timeout' => 6, 'cert' => true]);
+  $out[] = [$r['code'] === 200 ? 'ok' : 'aviso', 'Certificado que recibe el servidor de login.microsoftonline.com: ' . ($r['cert'] ?? '') . ' · cabeceras: ' . ($hdrs($r) ?: 'ninguna')];
+  $r = od_http('GET', $cfgUrl, ['timeout' => 10, 'tls12' => true]);
+  $out[] = [$r['code'] === 200 ? 'ok' : 'error', 'Forzando TLS 1.2: ' . ($r['code'] === 200 ? 'HTTP 200' : $show($r))];
+  $ctx = stream_context_create(['http' => ['timeout' => 10, 'ignore_errors' => true, 'method' => 'GET']]);
+  $body = ini_get('allow_url_fopen') ? @file_get_contents($cfgUrl, false, $ctx) : false;
+  $out[] = [$body !== false && stripos((string) ($http_response_header[0] ?? ''), '200') !== false ? 'ok' : 'error', 'Con el otro método de PHP (streams): ' . (ini_get('allow_url_fopen') ? (isset($http_response_header[0]) ? $http_response_header[0] : 'sin respuesta') . ($body !== false ? ' · ' . mb_substr(trim(preg_replace('/\s+/', ' ', strip_tags(substr($body, 0, 80)))), 0, 80) : '') : 'allow_url_fopen está desactivado')];
+  foreach (['https://graph.microsoft.com/v1.0/' => 'Graph', 'https://login.live.com/' => 'login.live.com', 'https://www.microsoft.com/' => 'www.microsoft.com', 'https://api.github.com/' => 'api.github.com', 'https://example.com/' => 'example.com'] as $u => $name) {
+    if (microtime(true) - $t0 > 40) { $out[] = ['aviso', 'Se omiten las pruebas restantes por falta de tiempo.']; break; }
+    $r = od_http('GET', $u, ['timeout' => 6, 'cert' => true]);
+    $out[] = [$r['code'] > 0 && $r['code'] < 500 && $r['code'] !== 404 ? 'ok' : 'aviso', 'Prueba con ' . $name . ': HTTP ' . $r['code'] . ($r['error'] !== '' ? ' · ' . $r['error'] : '') . ' · IP ' . ($r['ip'] ?: '—') . ' · certificado: ' . mb_substr($r['cert'] ?? '', 0, 90)];
   }
   $mine = $c['login_base'] . '/' . rawurlencode($c['tenant']) . '/oauth2/v2.0/token';
   $out[] = [$anyOk ? 'ok' : 'error', $anyOk ? 'Hay al menos una vía para llegar al inicio de sesión de Microsoft.' : 'Ninguna vía llega al inicio de sesión de Microsoft: el hosting lo bloquea o lo desvía.'];
